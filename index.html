@@ -2,53 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>UAP Disclosure Implications XR HUD</title>
+  <title>UAP Disclosure XR HUD v2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
-    html, body { margin: 0; height: 100%; background: #02040a; }
+    html, body { margin: 0; height: 100%; background: #020611; overflow: hidden; font-family: Arial, Helvetica, sans-serif; }
     .overlay {
-      position: fixed;
-      top: 12px;
-      left: 12px;
-      z-index: 9;
-      font-family: Arial, Helvetica, sans-serif;
-      color: #dff7ff;
-      background: rgba(5,12,24,.75);
-      border: 1px solid rgba(120,220,255,.35);
-      border-radius: 14px;
-      padding: 12px 14px;
-      max-width: 360px;
-      line-height: 1.35;
-      box-shadow: 0 0 24px rgba(0,255,255,.14);
-      backdrop-filter: blur(8px);
+      position: fixed; top: 12px; left: 12px; z-index: 9; max-width: 400px; padding: 12px 14px;
+      border-radius: 14px; color: #dff8ff; background: rgba(6, 14, 29, 0.80);
+      border: 1px solid rgba(126, 247, 255, 0.35); box-shadow: 0 0 24px rgba(0,255,255,.12);
+      backdrop-filter: blur(8px); line-height: 1.36;
     }
-    .overlay h1 {
-      margin: 0 0 6px 0;
-      font-size: 18px;
-      color: #7ef7ff;
-    }
-    .overlay .small {
-      font-size: 12.5px;
-      color: #c7e8f3;
-    }
-    .overlay b { color: #ffd86b; }
+    .overlay h1 { margin: 0 0 6px 0; font-size: 18px; color: #7ef7ff; }
+    .overlay .small { font-size: 12.5px; color: #cce8f3; }
+    .overlay b { color: #ffd76d; }
   </style>
 </head>
 <body>
   <div class="overlay">
-    <h1>XR Disclosure HUD</h1>
+    <h1>XR Disclosure HUD v2</h1>
     <div class="small">
-      Tap the VR goggles icon for Quest/WebXR immersive mode.<br>
-      Desktop: <b>W A S D</b> move, mouse drag to look around.<br>
-      In VR: use controller rays to point at the scene.<br>
-      This environment visualizes the key implications from the updated disclosure analysis.
+      Quest/WebXR: tap the VR goggles icon. <br>
+      Desktop: <b>W A S D</b> move, drag to look. <br>
+      Panels are spread out in 3D space for readability, with larger text and animated data rings.
     </div>
   </div>
 
   <script>
     AFRAME.registerComponent('floaty', {
-      schema: {speed: {default: 1}, amount: {default: 0.12}, phase: {default: 0}},
+      schema: {speed: {default: 1}, amount: {default: 0.1}, phase: {default: 0}},
       tick: function (time) {
         const p = this.el.object3D.position;
         if (this.baseY === undefined) this.baseY = p.y;
@@ -57,140 +39,207 @@
     });
 
     AFRAME.registerComponent('spin-axis', {
-      schema: {x:{default:0}, y:{default:18}, z:{default:0}},
+      schema: {x:{default:0}, y:{default:15}, z:{default:0}},
       tick: function (time, dt) {
         const r = this.el.object3D.rotation;
-        r.x += THREE.MathUtils.degToRad(this.data.x * dt/1000);
-        r.y += THREE.MathUtils.degToRad(this.data.y * dt/1000);
-        r.z += THREE.MathUtils.degToRad(this.data.z * dt/1000);
+        r.x += THREE.MathUtils.degToRad(this.data.x * dt / 1000);
+        r.y += THREE.MathUtils.degToRad(this.data.y * dt / 1000);
+        r.z += THREE.MathUtils.degToRad(this.data.z * dt / 1000);
       }
     });
 
     AFRAME.registerComponent('pulse-scale', {
-      schema: {min:{default:1}, max:{default:1.08}, speed:{default:1.2}, phase:{default:0}},
+      schema: {min:{default:1}, max:{default:1.06}, speed:{default:1.1}, phase:{default:0}},
       tick: function(time){
-        const s = this.data.min + (this.data.max - this.data.min) * (0.5 + 0.5*Math.sin(time*0.001*this.data.speed + this.data.phase));
+        const s = this.data.min + (this.data.max - this.data.min) * (0.5 + 0.5*Math.sin(time * 0.001 * this.data.speed + this.data.phase));
         this.el.object3D.scale.set(s, s, s);
+      }
+    });
+
+    AFRAME.registerComponent('panel-card', {
+      schema: {
+        title: {type: 'string'},
+        body: {type: 'string'},
+        accent: {default: '#7ef7ff'},
+        glow:   {default: '#16384e'},
+        foot:   {type: 'string', default: ''}
+      },
+      init: function () {
+        const d = this.data;
+        const el = this.el;
+
+        const back = document.createElement('a-plane');
+        back.setAttribute('width', 3.7);
+        back.setAttribute('height', 2.45);
+        back.setAttribute('color', '#081423');
+        back.setAttribute('material', 'transparent: true; opacity: 0.82; emissive: ' + d.glow + '; emissiveIntensity: 0.36');
+        el.appendChild(back);
+
+        const frame = document.createElement('a-plane');
+        frame.setAttribute('width', 3.78);
+        frame.setAttribute('height', 2.53);
+        frame.setAttribute('color', d.accent);
+        frame.setAttribute('material', 'wireframe: true; transparent: true; opacity: 0.62');
+        frame.setAttribute('position', '0 0 0.02');
+        el.appendChild(frame);
+
+        const headBar = document.createElement('a-plane');
+        headBar.setAttribute('width', 3.45);
+        headBar.setAttribute('height', 0.30);
+        headBar.setAttribute('color', '#0b1c31');
+        headBar.setAttribute('material', 'transparent: true; opacity: 0.85; emissive: ' + d.glow + '; emissiveIntensity: 0.22');
+        headBar.setAttribute('position', '0 0.96 0.03');
+        el.appendChild(headBar);
+
+        const title = document.createElement('a-text');
+        title.setAttribute('value', d.title);
+        title.setAttribute('color', d.accent);
+        title.setAttribute('width', 5.2);
+        title.setAttribute('align', 'left');
+        title.setAttribute('anchor', 'left');
+        title.setAttribute('baseline', 'top');
+        title.setAttribute('position', '-1.56 1.07 0.04');
+        el.appendChild(title);
+
+        const body = document.createElement('a-text');
+        body.setAttribute('value', d.body);
+        body.setAttribute('color', '#eefbff');
+        body.setAttribute('width', 3.95);
+        body.setAttribute('align', 'left');
+        body.setAttribute('anchor', 'left');
+        body.setAttribute('baseline', 'top');
+        body.setAttribute('position', '-1.54 0.72 0.04');
+        el.appendChild(body);
+
+        if (d.foot) {
+          const foot = document.createElement('a-text');
+          foot.setAttribute('value', d.foot);
+          foot.setAttribute('color', '#ffd76d');
+          foot.setAttribute('width', 3.9);
+          foot.setAttribute('align', 'left');
+          foot.setAttribute('anchor', 'left');
+          foot.setAttribute('baseline', 'bottom');
+          foot.setAttribute('position', '-1.54 -1.00 0.04');
+          el.appendChild(foot);
+        }
       }
     });
   </script>
 
   <a-scene
-    background="color: #020712"
+    background="color: #020816"
     renderer="antialias: true; colorManagement: true"
     xr-mode-ui="enabled: true"
     device-orientation-permission-ui="enabled: true"
-    fog="type: exponential; color: #07111f; density: 0.028">
+    fog="type: exponential; color: #06101d; density: 0.02">
 
-    <a-entity light="type: ambient; intensity: 0.9; color: #8fdfff"></a-entity>
-    <a-entity light="type: point; intensity: 1.2; color: #69f7ff; distance: 24" position="0 4 0"></a-entity>
-    <a-entity light="type: point; intensity: 0.8; color: #cc88ff; distance: 28" position="-5 3 -4"></a-entity>
-    <a-entity light="type: point; intensity: 0.8; color: #ffcf7b; distance: 28" position="5 3 -4"></a-entity>
+    <a-entity light="type: ambient; intensity: 0.95; color: #9fdfff"></a-entity>
+    <a-entity light="type: point; intensity: 1.0; color: #66f2ff; distance: 30" position="0 5 -2"></a-entity>
+    <a-entity light="type: point; intensity: 0.85; color: #cf8cff; distance: 28" position="-6 4 -7"></a-entity>
+    <a-entity light="type: point; intensity: 0.85; color: #ffd76d; distance: 28" position="6 4 -7"></a-entity>
 
-    <a-entity id="rig" position="0 1.65 6">
-      <a-camera wasd-controls="acceleration: 18" look-controls="pointerLockEnabled: false">
+    <a-entity id="rig" position="0 1.65 3">
+      <a-camera wasd-controls="acceleration: 20" look-controls="pointerLockEnabled: false">
         <a-cursor color="#7ef7ff" fuse="false"></a-cursor>
       </a-camera>
-      <a-entity laser-controls="hand: left" raycaster="objects: .clickable"></a-entity>
-      <a-entity laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
+      <a-entity laser-controls="hand: left"></a-entity>
+      <a-entity laser-controls="hand: right"></a-entity>
     </a-entity>
 
-    <a-sky color="#030816"></a-sky>
+    <a-sky color="#030919"></a-sky>
+
     <a-entity id="stars">
-      <a-sphere radius="0.03" color="#ffffff" position="-8 6 -12"></a-sphere>
-      <a-sphere radius="0.03" color="#88eaff" position="5 7 -9"></a-sphere>
-      <a-sphere radius="0.03" color="#ffd670" position="2 5 -14"></a-sphere>
-      <a-sphere radius="0.02" color="#d5a3ff" position="-2 8 -10"></a-sphere>
-      <a-sphere radius="0.03" color="#88eaff" position="8 5 -18"></a-sphere>
-      <a-sphere radius="0.02" color="#ffffff" position="-10 9 -20"></a-sphere>
-      <a-sphere radius="0.02" color="#ffffff" position="10 8 -13"></a-sphere>
-      <a-sphere radius="0.025" color="#d5a3ff" position="-6 4 -16"></a-sphere>
-      <a-sphere radius="0.022" color="#88eaff" position="1 9 -18"></a-sphere>
-      <a-sphere radius="0.02" color="#ffd670" position="-12 6 -14"></a-sphere>
-      <a-sphere radius="0.02" color="#88eaff" position="12 9 -16"></a-sphere>
-      <a-sphere radius="0.02" color="#ffffff" position="0 11 -20"></a-sphere>
+      <a-sphere radius="0.03" color="#ffffff" position="-10 8 -14"></a-sphere>
+      <a-sphere radius="0.02" color="#8beeff" position="-6 9 -18"></a-sphere>
+      <a-sphere radius="0.03" color="#d09cff" position="-2 7 -12"></a-sphere>
+      <a-sphere radius="0.02" color="#ffd76d" position="2 10 -16"></a-sphere>
+      <a-sphere radius="0.03" color="#8beeff" position="7 7 -13"></a-sphere>
+      <a-sphere radius="0.02" color="#ffffff" position="11 9 -18"></a-sphere>
+      <a-sphere radius="0.02" color="#8beeff" position="-12 6 -20"></a-sphere>
+      <a-sphere radius="0.02" color="#d09cff" position="12 10 -15"></a-sphere>
+      <a-sphere radius="0.02" color="#ffffff" position="0 11 -22"></a-sphere>
+      <a-sphere radius="0.025" color="#ffd76d" position="-1 6 -20"></a-sphere>
     </a-entity>
 
-    <a-cylinder position="0 0 -1" radius="8.2" height="0.12" color="#071221" material="metalness: 0.2; roughness: 0.45"></a-cylinder>
-    <a-ring position="0 0.07 -1" rotation="-90 0 0" radius-inner="6.6" radius-outer="7.4" color="#1be7ff" material="opacity: 0.28; emissive: #1be7ff; emissiveIntensity: 0.9"></a-ring>
-    <a-ring position="0 0.071 -1" rotation="-90 0 0" radius-inner="4.7" radius-outer="5.1" color="#c882ff" material="opacity: 0.24; emissive: #c882ff; emissiveIntensity: 0.8"></a-ring>
-    <a-ring position="0 0.072 -1" rotation="-90 0 0" radius-inner="2.1" radius-outer="2.35" color="#ffd76d" material="opacity: 0.24; emissive: #ffd76d; emissiveIntensity: 0.8"></a-ring>
+    <a-cylinder position="0 0 -6" radius="15" height="0.12" color="#07121f" material="metalness: 0.15; roughness: 0.45"></a-cylinder>
+    <a-ring position="0 0.07 -6" rotation="-90 0 0" radius-inner="2.1" radius-outer="2.5" color="#73f7ff" material="transparent: true; opacity: 0.34; emissive: #73f7ff; emissiveIntensity: 0.85"></a-ring>
+    <a-ring position="0 0.071 -6" rotation="-90 0 0" radius-inner="5.2" radius-outer="5.55" color="#cb8aff" material="transparent: true; opacity: 0.26; emissive: #cb8aff; emissiveIntensity: 0.75"></a-ring>
+    <a-ring position="0 0.072 -6" rotation="-90 0 0" radius-inner="8.5" radius-outer="8.85" color="#ffd76d" material="transparent: true; opacity: 0.23; emissive: #ffd76d; emissiveIntensity: 0.70"></a-ring>
 
-    <a-entity position="0 1.9 -1" floaty="speed: 1.3; amount: 0.08">
-      <a-sphere radius="0.66" color="#4cefff" material="transparent: true; opacity: 0.14; emissive: #4cefff; emissiveIntensity: 1.2; wireframe: true" spin-axis="y: 10"></a-sphere>
-      <a-torus radius="1.12" radius-tubular="0.03" rotation="90 0 0" color="#62f6ff" material="emissive: #62f6ff; emissiveIntensity: 1.1; transparent: true; opacity: 0.85" spin-axis="y: 28"></a-torus>
-      <a-torus radius="1.45" radius-tubular="0.028" rotation="50 0 30" color="#cd88ff" material="emissive: #cd88ff; emissiveIntensity: 1.1; transparent: true; opacity: 0.8" spin-axis="x: 18; y: 12"></a-torus>
-      <a-torus radius="1.78" radius-tubular="0.022" rotation="0 0 90" color="#ffd76d" material="emissive: #ffd76d; emissiveIntensity: 1.0; transparent: true; opacity: 0.72" spin-axis="z: 24"></a-torus>
+    <a-entity position="0 2.4 -6" floaty="speed: 1.0; amount: 0.08">
+      <a-sphere radius="0.75" color="#5cefff" material="transparent: true; opacity: 0.14; emissive: #5cefff; emissiveIntensity: 1.2; wireframe: true" spin-axis="y: 12"></a-sphere>
+      <a-torus radius="1.2" radius-tubular="0.03" rotation="90 0 0" color="#62f6ff" material="emissive: #62f6ff; emissiveIntensity: 1.1; transparent: true; opacity: 0.85" spin-axis="y: 26"></a-torus>
+      <a-torus radius="1.55" radius-tubular="0.026" rotation="40 0 25" color="#cd88ff" material="emissive: #cd88ff; emissiveIntensity: 1.05; transparent: true; opacity: 0.78" spin-axis="x: 18; y: 13"></a-torus>
+      <a-torus radius="1.92" radius-tubular="0.022" rotation="0 0 90" color="#ffd76d" material="emissive: #ffd76d; emissiveIntensity: 1.0; transparent: true; opacity: 0.74" spin-axis="z: 24"></a-torus>
+      <a-torus radius="2.35" radius-tubular="0.018" rotation="75 0 0" color="#7ff8ff" material="emissive: #7ff8ff; emissiveIntensity: 0.88; transparent: true; opacity: 0.65" spin-axis="y: 34"></a-torus>
+      <a-torus radius="2.75" radius-tubular="0.016" rotation="10 30 70" color="#e09bff" material="emissive: #e09bff; emissiveIntensity: 0.8; transparent: true; opacity: 0.60" spin-axis="x: 12; z: 22"></a-torus>
+      <a-torus radius="3.1" radius-tubular="0.014" rotation="0 0 90" color="#ffe08b" material="emissive: #ffe08b; emissiveIntensity: 0.8; transparent: true; opacity: 0.55" spin-axis="z: 18"></a-torus>
 
-      <a-entity position="0 1.55 0">
-        <a-plane width="3.6" height="0.55" color="#081220" material="opacity: 0.44; transparent: true; emissive: #12364d; emissiveIntensity: 0.45"></a-plane>
-        <a-text value="DISCLOSURE IMPLICATIONS / 2026" align="center" color="#7ef7ff" width="6.4" position="0 0 0.03"></a-text>
+      <a-entity position="0 1.95 0">
+        <a-plane width="4.6" height="0.7" color="#081321" material="transparent: true; opacity: 0.55; emissive: #14364b; emissiveIntensity: 0.40"></a-plane>
+        <a-text value="DISCLOSURE IMPLICATIONS XR HUD / QUEST OPTIMIZED" align="center" color="#7ef7ff" width="7.6" position="0 0.03 0.03"></a-text>
       </a-entity>
 
-      <a-entity position="0 -1.45 0">
-        <a-plane width="4.1" height="0.78" color="#081220" material="opacity: 0.44; transparent: true; emissive: #2c1836; emissiveIntensity: 0.45"></a-plane>
-        <a-text value="A colorful XR dashboard of the 2024 study update,\nlinking The Age of Disclosure and the upcoming Disclosure Day movie." align="center" color="#ffd76d" width="6.4" position="0 0.08 0.03"></a-text>
+      <a-entity position="0 -2.05 0">
+        <a-plane width="5.2" height="0.88" color="#081321" material="transparent: true; opacity: 0.52; emissive: #321a3d; emissiveIntensity: 0.38"></a-plane>
+        <a-text value="A denser 3D heads-up environment summarizing the updated UAP disclosure analysis,\ncombining the 2024 study, The Age of Disclosure, and the upcoming Disclosure Day film." align="center" color="#ffd76d" width="7.2" position="0 0.10 0.03"></a-text>
       </a-entity>
     </a-entity>
 
-    <a-entity position="-4.2 2.2 -3.2" rotation="0 22 0" floaty="speed: 0.9; amount: 0.08; phase: 0.4">
-      <a-plane width="3.1" height="2.15" color="#081523" material="transparent: true; opacity: 0.78; emissive: #1c5f73; emissiveIntensity: 0.38"></a-plane>
-      <a-plane width="3.16" height="2.21" color="#70f6ff" material="wireframe: true; transparent: true; opacity: 0.55"></a-plane>
-      <a-text value="1  KNOWLEDGE CHANGES REACTION" color="#70f6ff" width="4.8" position="-1.35 0.84 0.03"></a-text>
-      <a-text value="The 2024 survey found a strong split:\npeople who knew more about UAP/NHI\nsaw disclosure as far more positive and\ntransformational than those who knew less.\n\nMedia exposure may move part of the public\nfrom fear / uncertainty toward curiosity\nand preparation." color="#dff7ff" width="3.85" position="-1.36 0.48 0.03"></a-text>
-      <a-text value="Signal: information can soften shock." color="#ffd76d" width="3.95" position="-1.35 -0.85 0.03"></a-text>
+    <a-entity position="-8.5 2.6 -11" rotation="0 28 0" floaty="speed: 0.85; amount: 0.06; phase: 0.0"
+              panel-card="title: 1  KNOWLEDGE CHANGES REACTION; body: The 2024 report found a sharp split. People who knew more about UAP/NHI saw disclosure as far more positive and transformational. People who knew less were dominated by fear, uncertainty, and paralysis.\n\nThis suggests that familiarity can soften shock.; accent: #7ef7ff; glow: #1b4b63; foot: Key implication: information exposure changes emotional valence."></a-entity>
+
+    <a-entity position="-4.2 3.0 -13.2" rotation="0 14 0" floaty="speed: 1.0; amount: 0.06; phase: 0.9"
+              panel-card="title: 2  MEDIA AS DISCLOSURE REHEARSAL; body: The Age of Disclosure brings insiders, secrecy claims, and national security framing to broader audiences. Disclosure Day is poised to push the subject deeper into mass culture.\n\nTogether they function like a cultural rehearsal before any formal disclosure.; accent: #d495ff; glow: #43245c; foot: Key implication: the public is being primed to think in disclosure terms."></a-entity>
+
+    <a-entity position="0 3.15 -14.2" rotation="0 0 0" floaty="speed: 0.95; amount: 0.06; phase: 1.8"
+              panel-card="title: 3  GLOBAL AWARENESS SHIFT; body: One of the strongest positive themes in the study was a shift toward We Are Not Alone consciousness. That frame can redirect attention toward ecological stewardship, civilizational humility, and humanity's place in a wider cosmos.\n\nThis is the deep narrative layer underneath the media wave.; accent: #9bf7b5; glow: #23412a; foot: Key implication: disclosure can become a planetary identity event."></a-entity>
+
+    <a-entity position="4.2 3.0 -13.2" rotation="0 -14 0" floaty="speed: 1.05; amount: 0.06; phase: 2.6"
+              panel-card="title: 4  SCIENCE / STEM STIMULUS; body: The report's most likely positive item for the full sample was increased investment in STEM. Public interest can expand into aerospace, propulsion, materials science, sensors, AI, astronomy, and consciousness research.\n\nThis is one of the most actionable outcomes of the current moment.; accent: #ffd76d; glow: #5b4218; foot: Key implication: curiosity may convert into education and research."></a-entity>
+
+    <a-entity position="8.5 2.6 -11" rotation="0 -28 0" floaty="speed: 0.9; amount: 0.06; phase: 3.4"
+              panel-card="title: 5  RISKS / NEGATIVE DYNAMICS; body: The same media wave that prepares the public can also destabilize the information field. The report warned about hoaxes, institutional distrust, polarization, social fracture, and disengagement.\n\nIn an AI era, those risks become even more acute.; accent: #ff96ad; glow: #5a2432; foot: Key implication: preparation and contamination rise together."></a-entity>
+
+    <a-entity position="-10.5 1.9 -6.5" rotation="0 42 0" floaty="speed: 0.8; amount: 0.05; phase: 0.5"
+              panel-card="title: 6  EVIDENCE TRAP; body: Mainstream attention without decisive public evidence can create a credibility trap. Believers intensify certainty. Skeptics intensify dismissal. Institutions look evasive whether they speak or remain silent.\n\nThis is one of the biggest interpretive risks in the next phase.; accent: #8cefff; glow: #16384a; foot: Watch for: testimony dominating where hard proof is absent."></a-entity>
+
+    <a-entity position="-5.6 1.6 -7.6" rotation="0 24 0" floaty="speed: 1.1; amount: 0.05; phase: 1.4"
+              panel-card="title: 7  AI HOAX ENVIRONMENT; body: The study already flagged widespread video hoaxes as a likely negative. That warning now feels prescient. Synthetic imagery, fake leaks, and rumor amplification can flourish around documentary and blockbuster attention.\n\nVerification norms become essential.; accent: #d39aff; glow: #3a214b; foot: Watch for: provenance, metadata, and source-chain verification."></a-entity>
+
+    <a-entity position="5.6 1.6 -7.6" rotation="0 -24 0" floaty="speed: 1.0; amount: 0.05; phase: 2.1"
+              panel-card="title: 8  BEST-CASE PATHWAY; body: In the best case, stigma drops, dialogue improves, evidence literacy rises, and people become more psychologically prepared. The topic shifts from fear theater into thoughtful inquiry, science, humility, and shared curiosity.\n\nThat is the constructive transformation pathway.; accent: #9cf7b5; glow: #23432c; foot: Watch for: thoughtful mainstream conversations rather than sensationalism."></a-entity>
+
+    <a-entity position="10.5 1.9 -6.5" rotation="0 -42 0" floaty="speed: 0.9; amount: 0.05; phase: 2.9"
+              panel-card="title: 9  WORST-CASE PATHWAY; body: In the worst case, conspiracy escalation, apocalyptic framing, scams, fake evidence, and culture-war interpretations consume the subject. Interest peaks around spectacle, then crashes into confusion or cynicism.\n\nThat would validate the study's darker social warnings.; accent: #ff9bb0; glow: #572534; foot: Watch for: fear narratives and opportunistic exploitation."></a-entity>
+
+    <a-entity position="-7.2 1.0 -3.8" rotation="0 58 0" floaty="speed: 1.0; amount: 0.04; phase: 0.7"
+              panel-card="title: 10  WHAT TO WATCH NOW; body: Key signals:\n• trailer talk turning into preparation talk\n• renewed official interviews\n• spikes in AI-generated fake footage\n• hopeful vs fear-based framing\n• a widening gap between cultural disclosure and formal disclosure; accent: #7ee7ff; glow: #18384a; foot: This next month is a threshold in social preparation, not formal disclosure."></a-entity>
+
+    <a-entity position="0 0.9 -4.2" rotation="0 0 0" floaty="speed: 0.92; amount: 0.04; phase: 1.8"
+              panel-card="title: 11  PREPARATION AGENDA; body: Best response:\n• build evidence hygiene\n• normalize uncertainty\n• stay grounded psychologically\n• keep dialogue open\n• resist scams and manipulation\n• preserve a positive frame rooted in humility, science, ecology, and compassion; accent: #ffd76d; glow: #5b4218; foot: Healthy stance: disciplined openness, neither gullibility nor reflexive dismissal."></a-entity>
+
+    <a-entity position="7.2 1.0 -3.8" rotation="0 -58 0" floaty="speed: 1.06; amount: 0.04; phase: 2.8"
+              panel-card="title: 12  BOTTOM LINE; body: The current media wave does not equal formal disclosure. But it does make the 2024 study more relevant. The core test is whether a mass public can move from fear and uncertainty toward transformational possibility without losing evidentiary discipline.; accent: #9ef7ff; glow: #17384a; foot: Transformation potential rises with knowledge. So do the stakes of confusion."></a-entity>
+
+    <a-entity position="-12 1.1 -8.5" pulse-scale="min:1; max:1.1; speed:1.0; phase:0.2">
+      <a-cylinder radius="0.09" height="2.8" color="#57f6ff" material="emissive: #57f6ff; emissiveIntensity: 1.08; transparent: true; opacity: 0.9"></a-cylinder>
+      <a-sphere radius="0.20" position="0 1.45 0" color="#57f6ff" material="emissive: #57f6ff; emissiveIntensity: 1.2"></a-sphere>
     </a-entity>
 
-    <a-entity position="-1.55 2.7 -4.8" rotation="0 8 0" floaty="speed: 1.1; amount: 0.08; phase: 1.2">
-      <a-plane width="3.0" height="2.25" color="#081523" material="transparent: true; opacity: 0.78; emissive: #44266d; emissiveIntensity: 0.34"></a-plane>
-      <a-plane width="3.06" height="2.31" color="#cc88ff" material="wireframe: true; transparent: true; opacity: 0.55"></a-plane>
-      <a-text value="2  MEDIA AS DISCLOSURE REHEARSAL" color="#cc88ff" width="4.8" position="-1.3 0.9 0.03"></a-text>
-      <a-text value="The Age of Disclosure acts like a bridge\nfrom specialist UAP circles to mainstream\naudiences. Disclosure Day may push the topic\nfurther into shared culture.\n\nDocumentary + blockbuster create a rehearsal\nspace before any formal government disclosure." color="#f1e7ff" width="3.8" position="-1.28 0.50 0.03"></a-text>
-      <a-text value="Signal: cultural priming is accelerating." color="#ffd76d" width="3.8" position="-1.29 -0.88 0.03"></a-text>
+    <a-entity position="12 1.1 -8.5" pulse-scale="min:1; max:1.1; speed:1.0; phase:1.9">
+      <a-cylinder radius="0.09" height="2.8" color="#cc88ff" material="emissive: #cc88ff; emissiveIntensity: 1.08; transparent: true; opacity: 0.9"></a-cylinder>
+      <a-sphere radius="0.20" position="0 1.45 0" color="#cc88ff" material="emissive: #cc88ff; emissiveIntensity: 1.2"></a-sphere>
     </a-entity>
 
-    <a-entity position="1.55 2.7 -4.8" rotation="0 -8 0" floaty="speed: 0.95; amount: 0.08; phase: 2.3">
-      <a-plane width="3.0" height="2.25" color="#081523" material="transparent: true; opacity: 0.78; emissive: #355d2d; emissiveIntensity: 0.34"></a-plane>
-      <a-plane width="3.06" height="2.31" color="#9bf7b5" material="wireframe: true; transparent: true; opacity: 0.55"></a-plane>
-      <a-text value="3  POSITIVE PATHWAYS" color="#9bf7b5" width="4.7" position="-1.2 0.9 0.03"></a-text>
-      <a-text value="Possible gains highlighted in the update:\n• stigma reduction\n• science and STEM curiosity\n• a planetary / ecological perspective\n• deeper public dialogue\n• improved evidence literacy\n• a more mature conversation about our\n  place in the cosmos" color="#eaffef" width="3.75" position="-1.25 0.48 0.03"></a-text>
-      <a-text value="Signal: transformation remains plausible." color="#ffd76d" width="3.85" position="-1.29 -0.88 0.03"></a-text>
+    <a-entity position="0 1.0 -16.5" pulse-scale="min:1; max:1.08; speed:1.1; phase:2.8">
+      <a-cylinder radius="0.08" height="2.4" color="#ffd76d" material="emissive: #ffd76d; emissiveIntensity: 1.02; transparent: true; opacity: 0.88"></a-cylinder>
+      <a-sphere radius="0.18" position="0 1.25 0" color="#ffd76d" material="emissive: #ffd76d; emissiveIntensity: 1.2"></a-sphere>
     </a-entity>
 
-    <a-entity position="4.2 2.2 -3.2" rotation="0 -22 0" floaty="speed: 1.15; amount: 0.08; phase: 3.1">
-      <a-plane width="3.1" height="2.15" color="#081523" material="transparent: true; opacity: 0.78; emissive: #6a2437; emissiveIntensity: 0.34"></a-plane>
-      <a-plane width="3.16" height="2.21" color="#ff8aa3" material="wireframe: true; transparent: true; opacity: 0.55"></a-plane>
-      <a-text value="4  RISKS / NEGATIVE DYNAMICS" color="#ff8aa3" width="4.7" position="-1.25 0.84 0.03"></a-text>
-      <a-text value="The report's warning signs are even more\nrelevant in an AI media environment:\n• video hoaxes and fake leaks\n• intensified polarization\n• institutional distrust\n• apocalyptic or conspiratorial overreach\n• public disengagement after spectacle\n• blurred lines between fiction and evidence" color="#ffe7ee" width="3.75" position="-1.3 0.48 0.03"></a-text>
-      <a-text value="Signal: narrative instability is rising." color="#ffd76d" width="3.9" position="-1.32 -0.85 0.03"></a-text>
-    </a-entity>
-
-    <a-entity position="-2.8 1.05 -1.35" rotation="0 32 0" floaty="speed: 1.0; amount: 0.05; phase: 0.9">
-      <a-plane width="2.7" height="1.95" color="#071523" material="transparent: true; opacity: 0.8; emissive: #224d77; emissiveIntensity: 0.34"></a-plane>
-      <a-plane width="2.76" height="2.01" color="#7ee7ff" material="wireframe: true; transparent: true; opacity: 0.5"></a-plane>
-      <a-text value="5  WHAT TO WATCH" color="#7ee7ff" width="4.5" position="-1.1 0.73 0.03"></a-text>
-      <a-text value="Look for:\n• trailer discourse becoming 'preparation'\n• new official interviews\n• spikes in AI-generated fake footage\n• a hopeful vs fear-based tone in coverage\n• widening gap between cultural disclosure\n  and formal institutional disclosure" color="#e6f9ff" width="3.45" position="-1.1 0.3 0.03"></a-text>
-    </a-entity>
-
-    <a-entity position="2.8 1.05 -1.35" rotation="0 -32 0" floaty="speed: 0.88; amount: 0.05; phase: 2.1">
-      <a-plane width="2.7" height="1.95" color="#071523" material="transparent: true; opacity: 0.8; emissive: #65411d; emissiveIntensity: 0.34"></a-plane>
-      <a-plane width="2.76" height="2.01" color="#ffd76d" material="wireframe: true; transparent: true; opacity: 0.5"></a-plane>
-      <a-text value="6  PREPARATION AGENDA" color="#ffd76d" width="4.2" position="-1.08 0.73 0.03"></a-text>
-      <a-text value="Best response:\n• build evidence hygiene\n• normalize uncertainty\n• stay grounded psychologically\n• resist scams and fear narratives\n• keep dialogue open\n• preserve the positive frame:\n  humility, science, ecology, compassion" color="#fff7de" width="3.36" position="-1.08 0.3 0.03"></a-text>
-    </a-entity>
-
-    <a-entity position="-6 1.1 -2.2" pulse-scale="min:1; max:1.1; speed:1.1; phase:0.5">
-      <a-cylinder radius="0.08" height="2.5" color="#57f6ff" material="emissive: #57f6ff; emissiveIntensity: 1.1; transparent: true; opacity: 0.9"></a-cylinder>
-      <a-sphere radius="0.18" position="0 1.3 0" color="#57f6ff" material="emissive: #57f6ff; emissiveIntensity: 1.2"></a-sphere>
-    </a-entity>
-    <a-entity position="6 1.1 -2.2" pulse-scale="min:1; max:1.1; speed:1.0; phase:2.2">
-      <a-cylinder radius="0.08" height="2.5" color="#cc88ff" material="emissive: #cc88ff; emissiveIntensity: 1.1; transparent: true; opacity: 0.9"></a-cylinder>
-      <a-sphere radius="0.18" position="0 1.3 0" color="#cc88ff" material="emissive: #cc88ff; emissiveIntensity: 1.2"></a-sphere>
-    </a-entity>
-
-    <a-entity position="0 0.55 0.9" rotation="-18 0 0">
-      <a-plane width="5.1" height="0.44" color="#06111c" material="transparent: true; opacity: 0.7; emissive: #1a2f43; emissiveIntensity: 0.4"></a-plane>
-      <a-text value="Futuristic HUD summary: transformation potential rises with knowledge, but so do the risks of hoaxes, distrust, and media confusion." align="center" width="5.8" color="#d6f8ff" position="0 0 0.03"></a-text>
+    <a-entity position="0 0.52 1.2" rotation="-16 0 0">
+      <a-plane width="7.2" height="0.48" color="#06121d" material="transparent: true; opacity: 0.78; emissive: #183348; emissiveIntensity: 0.34"></a-plane>
+      <a-text value="Quest-friendly layout: bigger text, wider spacing, denser content, animated data rings, and VR controls enabled." align="center" width="7.2" color="#d7f8ff" position="0 0 0.03"></a-text>
     </a-entity>
   </a-scene>
 </body>
