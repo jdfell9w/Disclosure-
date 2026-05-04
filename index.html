@@ -2,235 +2,317 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>UAP Disclosure XR HUD Spread Clean v2</title>
+  <title>UAP Disclosure XR HUD 360</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
     html, body {
       margin: 0;
       height: 100%;
-      background: #020611;
       overflow: hidden;
+      background: #020611;
       font-family: Arial, Helvetica, sans-serif;
     }
   </style>
 </head>
 <body>
-  <script>
-    AFRAME.registerComponent('floaty', {
-      schema: {speed: {default: 1}, amount: {default: 0.09}, phase: {default: 0}},
-      tick: function (time) {
-        const p = this.el.object3D.position;
-        if (this.baseY === undefined) this.baseY = p.y;
-        p.y = this.baseY + Math.sin(time * 0.001 * this.data.speed + this.data.phase) * this.data.amount;
-      }
-    });
+<script>
+  // Gentle floating for panels / core
+  AFRAME.registerComponent('floaty', {
+    schema: {speed: {default: 1}, amount: {default: 0.07}, phase: {default: 0}},
+    tick: function (time) {
+      const p = this.el.object3D.position;
+      if (this.baseY === undefined) this.baseY = p.y;
+      p.y = this.baseY + Math.sin(time * 0.001 * this.data.speed + this.data.phase) * this.data.amount;
+    }
+  });
 
-    AFRAME.registerComponent('spin-axis', {
-      schema: {x:{default:0}, y:{default:15}, z:{default:0}},
-      tick: function (time, dt) {
-        const r = this.el.object3D.rotation;
-        r.x += THREE.MathUtils.degToRad(this.data.x * dt / 1000);
-        r.y += THREE.MathUtils.degToRad(this.data.y * dt / 1000);
-        r.z += THREE.MathUtils.degToRad(this.data.z * dt / 1000);
-      }
-    });
+  AFRAME.registerComponent('spin-axis', {
+    schema: {x:{default:0}, y:{default:15}, z:{default:0}},
+    tick: function (time, dt) {
+      const r = this.el.object3D.rotation;
+      r.x += THREE.MathUtils.degToRad(this.data.x * dt / 1000);
+      r.y += THREE.MathUtils.degToRad(this.data.y * dt / 1000);
+      r.z += THREE.MathUtils.degToRad(this.data.z * dt / 1000);
+    }
+  });
 
-    AFRAME.registerComponent('pulse-scale', {
-      schema: {min:{default:1}, max:{default:1.06}, speed:{default:1.1}, phase:{default:0}},
-      tick: function(time){
-        const s = this.data.min + (this.data.max - this.data.min) * (0.5 + 0.5*Math.sin(time * 0.001 * this.data.speed + this.data.phase));
-        this.el.object3D.scale.set(s, s, s);
-      }
-    });
+  // Quest-friendly thumbstick locomotion.
+  AFRAME.registerComponent('thumbstick-locomotion', {
+    schema: {
+      speed: {default: 0.06},
+      turnSpeed: {default: 2.2}
+    },
+    init: function () {
+      this.moveX = 0;
+      this.moveY = 0;
+      this.turnX = 0;
+      this.leftController = document.getElementById('leftHand');
+      this.rightController = document.getElementById('rightHand');
 
-    AFRAME.registerComponent('panel-card', {
-      schema: {
-        title: {type: 'string'},
-        body: {type: 'string'},
-        accent: {default: '#7ef7ff'},
-        glow:   {default: '#16384e'},
-        foot:   {type: 'string', default: ''}
-      },
-      init: function () {
-        const d = this.data;
-        const el = this.el;
-        const w = 4.35;
-        const h = 3.0;
-        const hw = w / 2;
-        const hh = h / 2;
-
-        const back = document.createElement('a-plane');
-        back.setAttribute('width', w);
-        back.setAttribute('height', h);
-        back.setAttribute('color', '#081423');
-        back.setAttribute('material', 'transparent: true; opacity: 0.84; emissive: ' + d.glow + '; emissiveIntensity: 0.36; side: double');
-        el.appendChild(back);
-
-        const edges = [
-          [[-hw, hh, 0.025], [hw, hh, 0.025]],
-          [[-hw, -hh, 0.025], [hw, -hh, 0.025]],
-          [[-hw, -hh, 0.025], [-hw, hh, 0.025]],
-          [[hw, -hh, 0.025], [hw, hh, 0.025]]
-        ];
-        edges.forEach(([s, e]) => {
-          const line = document.createElement('a-entity');
-          line.setAttribute('line', `start: ${s[0]} ${s[1]} ${s[2]}; end: ${e[0]} ${e[1]} ${e[2]}; color: ${d.accent}; opacity: 0.86`);
-          el.appendChild(line);
+      if (this.leftController) {
+        this.leftController.addEventListener('thumbstickmoved', (e) => {
+          this.moveX = e.detail.x || 0;
+          this.moveY = e.detail.y || 0;
         });
-
-        const headBar = document.createElement('a-plane');
-        headBar.setAttribute('width', 4.05);
-        headBar.setAttribute('height', 0.36);
-        headBar.setAttribute('color', '#0b1c31');
-        headBar.setAttribute('material', 'transparent: true; opacity: 0.88; emissive: ' + d.glow + '; emissiveIntensity: 0.22; side: double');
-        headBar.setAttribute('position', '0 1.19 0.035');
-        el.appendChild(headBar);
-
-        const title = document.createElement('a-text');
-        title.setAttribute('value', d.title);
-        title.setAttribute('color', d.accent);
-        title.setAttribute('width', 6.0);
-        title.setAttribute('align', 'left');
-        title.setAttribute('anchor', 'left');
-        title.setAttribute('baseline', 'top');
-        title.setAttribute('position', '-1.88 1.34 0.05');
-        el.appendChild(title);
-
-        const body = document.createElement('a-text');
-        body.setAttribute('value', d.body);
-        body.setAttribute('color', '#eefbff');
-        body.setAttribute('width', 4.65);
-        body.setAttribute('align', 'left');
-        body.setAttribute('anchor', 'left');
-        body.setAttribute('baseline', 'top');
-        body.setAttribute('position', '-1.86 0.90 0.05');
-        el.appendChild(body);
-
-        if (d.foot) {
-          const foot = document.createElement('a-text');
-          foot.setAttribute('value', d.foot);
-          foot.setAttribute('color', '#ffd76d');
-          foot.setAttribute('width', 4.5);
-          foot.setAttribute('align', 'left');
-          foot.setAttribute('anchor', 'left');
-          foot.setAttribute('baseline', 'bottom');
-          foot.setAttribute('position', '-1.86 -1.18 0.05');
-          el.appendChild(foot);
-        }
       }
-    });
-  </script>
 
-  <a-scene
-    background="color: #020816"
-    renderer="antialias: true; colorManagement: true"
-    xr-mode-ui="enabled: true"
-    device-orientation-permission-ui="enabled: true"
-    fog="type: exponential; color: #06101d; density: 0.018">
+      if (this.rightController) {
+        this.rightController.addEventListener('thumbstickmoved', (e) => {
+          this.turnX = e.detail.x || 0;
+        });
+      }
+    },
+    tick: function (time, dt) {
+      const rig = this.el.object3D;
+      const secs = dt / 1000;
 
-    <a-entity light="type: ambient; intensity: 0.95; color: #9fdfff"></a-entity>
-    <a-entity light="type: point; intensity: 1.0; color: #66f2ff; distance: 36" position="0 5 -4"></a-entity>
-    <a-entity light="type: point; intensity: 0.85; color: #cf8cff; distance: 34" position="-8 4 -8"></a-entity>
-    <a-entity light="type: point; intensity: 0.85; color: #ffd76d; distance: 34" position="8 4 -8"></a-entity>
+      // Smooth snap-free turning using right thumbstick.
+      if (Math.abs(this.turnX) > 0.1) {
+        rig.rotation.y -= this.turnX * this.data.turnSpeed * secs;
+      }
 
-    <!-- Navigation is enabled:
-         Desktop: WASD + mouse look
-         VR: headset view + controller presence -->
-    <a-entity id="rig" position="0 1.65 3">
-      <a-camera wasd-controls="acceleration: 20" look-controls="pointerLockEnabled: false">
-        <a-cursor color="#7ef7ff" fuse="false"></a-cursor>
-      </a-camera>
-      <a-entity laser-controls="hand: left"></a-entity>
-      <a-entity laser-controls="hand: right"></a-entity>
+      // Move relative to camera facing direction using left thumbstick.
+      if (Math.abs(this.moveX) > 0.08 || Math.abs(this.moveY) > 0.08) {
+        const cam = document.getElementById('camera');
+        if (!cam) return;
+
+        const camObj = cam.object3D;
+        const forward = new THREE.Vector3();
+        camObj.getWorldDirection(forward);
+        forward.y = 0;
+        forward.normalize();
+
+        const right = new THREE.Vector3();
+        right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+        const move = new THREE.Vector3();
+        move.addScaledVector(forward, -this.moveY * this.data.speed);
+        move.addScaledVector(right, this.moveX * this.data.speed);
+
+        rig.position.x += move.x;
+        rig.position.z += move.z;
+      }
+    }
+  });
+
+  // Clean readable panel with no diagonal line.
+  AFRAME.registerComponent('panel-card', {
+    schema: {
+      title: {type: 'string'},
+      body: {type: 'string'},
+      accent: {default: '#7ef7ff'},
+      glow:   {default: '#16384e'},
+      foot:   {type: 'string', default: ''}
+    },
+    init: function () {
+      const d = this.data;
+      const el = this.el;
+      const w = 4.15;
+      const h = 2.85;
+      const hw = w / 2;
+      const hh = h / 2;
+
+      const back = document.createElement('a-plane');
+      back.setAttribute('width', w);
+      back.setAttribute('height', h);
+      back.setAttribute('color', '#081423');
+      back.setAttribute('material', 'transparent: true; opacity: 0.86; emissive: ' + d.glow + '; emissiveIntensity: 0.34; side: double');
+      el.appendChild(back);
+
+      // Border only.
+      const edges = [
+        [[-hw, hh, 0.025], [hw, hh, 0.025]],
+        [[-hw, -hh, 0.025], [hw, -hh, 0.025]],
+        [[-hw, -hh, 0.025], [-hw, hh, 0.025]],
+        [[hw, -hh, 0.025], [hw, hh, 0.025]]
+      ];
+      edges.forEach(([s, e]) => {
+        const line = document.createElement('a-entity');
+        line.setAttribute('line', `start: ${s[0]} ${s[1]} ${s[2]}; end: ${e[0]} ${e[1]} ${e[2]}; color: ${d.accent}; opacity: 0.86`);
+        el.appendChild(line);
+      });
+
+      const headBar = document.createElement('a-plane');
+      headBar.setAttribute('width', 3.84);
+      headBar.setAttribute('height', 0.34);
+      headBar.setAttribute('color', '#0b1c31');
+      headBar.setAttribute('material', 'transparent: true; opacity: 0.88; emissive: ' + d.glow + '; emissiveIntensity: 0.22; side: double');
+      headBar.setAttribute('position', '0 1.10 0.035');
+      el.appendChild(headBar);
+
+      const title = document.createElement('a-text');
+      title.setAttribute('value', d.title);
+      title.setAttribute('color', d.accent);
+      title.setAttribute('width', 5.7);
+      title.setAttribute('align', 'left');
+      title.setAttribute('anchor', 'left');
+      title.setAttribute('baseline', 'top');
+      title.setAttribute('position', '-1.78 1.24 0.05');
+      el.appendChild(title);
+
+      const body = document.createElement('a-text');
+      body.setAttribute('value', d.body);
+      body.setAttribute('color', '#eefbff');
+      body.setAttribute('width', 4.35);
+      body.setAttribute('align', 'left');
+      body.setAttribute('anchor', 'left');
+      body.setAttribute('baseline', 'top');
+      body.setAttribute('position', '-1.76 0.84 0.05');
+      el.appendChild(body);
+
+      if (d.foot) {
+        const foot = document.createElement('a-text');
+        foot.setAttribute('value', d.foot);
+        foot.setAttribute('color', '#ffd76d');
+        foot.setAttribute('width', 4.2);
+        foot.setAttribute('align', 'left');
+        foot.setAttribute('anchor', 'left');
+        foot.setAttribute('baseline', 'bottom');
+        foot.setAttribute('position', '-1.76 -1.12 0.05');
+        el.appendChild(foot);
+      }
+    }
+  });
+</script>
+
+<a-scene
+  background="color: #020816"
+  renderer="antialias: true; colorManagement: true"
+  xr-mode-ui="enabled: true"
+  device-orientation-permission-ui="enabled: true"
+  fog="type: exponential; color: #06101d; density: 0.017">
+
+  <!-- Lights -->
+  <a-entity light="type: ambient; intensity: 0.96; color: #a7e8ff"></a-entity>
+  <a-entity light="type: point; intensity: 1.05; color: #66f2ff; distance: 40" position="0 5 0"></a-entity>
+  <a-entity light="type: point; intensity: 0.82; color: #cf8cff; distance: 36" position="-8 4 -8"></a-entity>
+  <a-entity light="type: point; intensity: 0.82; color: #ffd76d; distance: 36" position="8 4 8"></a-entity>
+
+  <!-- Camera rig: desktop navigation + Quest thumbstick locomotion -->
+  <a-entity id="rig" position="0 1.65 0" thumbstick-locomotion="speed: 0.12; turnSpeed: 2.7">
+    <a-camera id="camera" wasd-controls="acceleration: 25" look-controls="pointerLockEnabled: false">
+      <a-cursor color="#7ef7ff" fuse="false"></a-cursor>
+    </a-camera>
+    <a-entity id="leftHand" laser-controls="hand: left"></a-entity>
+    <a-entity id="rightHand" laser-controls="hand: right"></a-entity>
+  </a-entity>
+
+  <a-sky color="#030919"></a-sky>
+
+  <!-- Stars -->
+  <a-entity id="stars">
+    <a-sphere radius="0.03" color="#ffffff" position="-12 8 -16"></a-sphere>
+    <a-sphere radius="0.02" color="#8beeff" position="-8 10 -6"></a-sphere>
+    <a-sphere radius="0.03" color="#d09cff" position="-2 9 12"></a-sphere>
+    <a-sphere radius="0.02" color="#ffd76d" position="5 10 -18"></a-sphere>
+    <a-sphere radius="0.03" color="#8beeff" position="10 8 10"></a-sphere>
+    <a-sphere radius="0.02" color="#ffffff" position="13 9 -4"></a-sphere>
+    <a-sphere radius="0.02" color="#8beeff" position="-13 6 8"></a-sphere>
+    <a-sphere radius="0.02" color="#d09cff" position="12 10 -15"></a-sphere>
+    <a-sphere radius="0.02" color="#ffffff" position="0 11 -22"></a-sphere>
+    <a-sphere radius="0.025" color="#ffd76d" position="-1 6 18"></a-sphere>
+  </a-entity>
+
+  <!-- Lowered floor -->
+  <a-cylinder position="0 -1.45 0" radius="18" height="0.12" color="#07121f" material="metalness: 0.15; roughness: 0.45"></a-cylinder>
+  <a-ring position="0 -1.38 0" rotation="-90 0 0" radius-inner="2.1" radius-outer="2.5"
+          color="#73f7ff" material="transparent: true; opacity: 0.34; emissive: #73f7ff; emissiveIntensity: 0.85"></a-ring>
+  <a-ring position="0 -1.379 0" rotation="-90 0 0" radius-inner="5.5" radius-outer="5.85"
+          color="#cb8aff" material="transparent: true; opacity: 0.26; emissive: #cb8aff; emissiveIntensity: 0.75"></a-ring>
+  <a-ring position="0 -1.378 0" rotation="-90 0 0" radius-inner="9.4" radius-outer="9.75"
+          color="#ffd76d" material="transparent: true; opacity: 0.23; emissive: #ffd76d; emissiveIntensity: 0.70"></a-ring>
+
+  <!-- Central core -->
+  <a-entity position="0 2.45 0" floaty="speed: 1.0; amount: 0.08">
+    <a-sphere radius="0.75" color="#5cefff"
+              material="transparent: true; opacity: 0.14; emissive: #5cefff; emissiveIntensity: 1.2; wireframe: true"
+              spin-axis="y: 12"></a-sphere>
+    <a-torus radius="1.2" radius-tubular="0.03" rotation="90 0 0"
+             color="#62f6ff"
+             material="emissive: #62f6ff; emissiveIntensity: 1.1; transparent: true; opacity: 0.85"
+             spin-axis="y: 26"></a-torus>
+    <a-torus radius="1.55" radius-tubular="0.026" rotation="40 0 25"
+             color="#cd88ff"
+             material="emissive: #cd88ff; emissiveIntensity: 1.05; transparent: true; opacity: 0.78"
+             spin-axis="x: 18; y: 13"></a-torus>
+    <a-torus radius="1.92" radius-tubular="0.022" rotation="0 0 90"
+             color="#ffd76d"
+             material="emissive: #ffd76d; emissiveIntensity: 1.0; transparent: true; opacity: 0.74"
+             spin-axis="z: 24"></a-torus>
+    <a-torus radius="2.35" radius-tubular="0.018" rotation="75 0 0"
+             color="#7ff8ff"
+             material="emissive: #7ff8ff; emissiveIntensity: 0.88; transparent: true; opacity: 0.65"
+             spin-axis="y: 34"></a-torus>
+    <a-torus radius="2.75" radius-tubular="0.016" rotation="10 30 70"
+             color="#e09bff"
+             material="emissive: #e09bff; emissiveIntensity: 0.8; transparent: true; opacity: 0.60"
+             spin-axis="x: 12; z: 22"></a-torus>
+    <a-torus radius="3.1" radius-tubular="0.014" rotation="0 0 90"
+             color="#ffe08b"
+             material="emissive: #ffe08b; emissiveIntensity: 0.8; transparent: true; opacity: 0.55"
+             spin-axis="z: 18"></a-torus>
+
+    <a-entity position="0 1.95 0">
+      <a-plane width="4.7" height="0.72" color="#081321"
+               material="transparent: true; opacity: 0.55; emissive: #14364b; emissiveIntensity: 0.40"></a-plane>
+      <a-text value="DISCLOSURE IMPLICATIONS XR HUD"
+              align="center" color="#7ef7ff" width="7.8" position="0 0.03 0.03"></a-text>
     </a-entity>
+  </a-entity>
 
-    <a-sky color="#030919"></a-sky>
+  <!-- 360-degree panel ring around the viewer -->
+  <a-entity position="0 2.6 -12" rotation="0 0 0" floaty="speed: 0.85; amount: 0.05; phase: 0.0"
+            panel-card="title: 1  KNOWLEDGE CHANGES REACTION; body: The 2024 report found a sharp split. People who knew more about UAP/NHI saw disclosure as far more positive and transformational. People who knew less were dominated by fear, uncertainty, and paralysis.\n\nThis suggests that familiarity can soften shock.; accent: #7ef7ff; glow: #1b4b63; foot: Key implication: information exposure changes emotional valence."></a-entity>
 
-    <a-entity id="stars">
-      <a-sphere radius="0.03" color="#ffffff" position="-10 8 -14"></a-sphere>
-      <a-sphere radius="0.02" color="#8beeff" position="-6 9 -18"></a-sphere>
-      <a-sphere radius="0.03" color="#d09cff" position="-2 7 -12"></a-sphere>
-      <a-sphere radius="0.02" color="#ffd76d" position="2 10 -16"></a-sphere>
-      <a-sphere radius="0.03" color="#8beeff" position="7 7 -13"></a-sphere>
-      <a-sphere radius="0.02" color="#ffffff" position="11 9 -18"></a-sphere>
-      <a-sphere radius="0.02" color="#8beeff" position="-12 6 -20"></a-sphere>
-      <a-sphere radius="0.02" color="#d09cff" position="12 10 -15"></a-sphere>
-      <a-sphere radius="0.02" color="#ffffff" position="0 11 -22"></a-sphere>
-      <a-sphere radius="0.025" color="#ffd76d" position="-1 6 -20"></a-sphere>
-    </a-entity>
+  <a-entity position="6.1 3.0 -10.6" rotation="0 -30 0" floaty="speed: 1.0; amount: 0.05; phase: 0.8"
+            panel-card="title: 2  MEDIA AS DISCLOSURE REHEARSAL; body: The Age of Disclosure brings insiders, secrecy claims, and national-security framing to broader audiences. Disclosure Day may push the topic further into mass culture.\n\nTogether they function like a cultural rehearsal before any formal disclosure.; accent: #d495ff; glow: #43245c; foot: Key implication: the public is being primed to think in disclosure terms."></a-entity>
 
-    <!-- Floor lowered to avoid cutting off lower panels -->
-    <a-cylinder position="0 -1.35 -7" radius="17" height="0.12" color="#07121f" material="metalness: 0.15; roughness: 0.45"></a-cylinder>
-    <a-ring position="0 -1.28 -7" rotation="-90 0 0" radius-inner="2.1" radius-outer="2.5" color="#73f7ff" material="transparent: true; opacity: 0.34; emissive: #73f7ff; emissiveIntensity: 0.85"></a-ring>
-    <a-ring position="0 -1.279 -7" rotation="-90 0 0" radius-inner="5.5" radius-outer="5.85" color="#cb8aff" material="transparent: true; opacity: 0.26; emissive: #cb8aff; emissiveIntensity: 0.75"></a-ring>
-    <a-ring position="0 -1.278 -7" rotation="-90 0 0" radius-inner="9.4" radius-outer="9.75" color="#ffd76d" material="transparent: true; opacity: 0.23; emissive: #ffd76d; emissiveIntensity: 0.70"></a-ring>
+  <a-entity position="10.6 3.1 -6.1" rotation="0 -60 0" floaty="speed: 0.95; amount: 0.05; phase: 1.4"
+            panel-card="title: 3  GLOBAL AWARENESS SHIFT; body: One of the strongest positive themes in the study was a shift toward We Are Not Alone consciousness. That frame can redirect attention toward ecological stewardship, civilizational humility, and humanity's place in a wider cosmos.\n\nThis is the deep narrative layer underneath the media wave.; accent: #9bf7b5; glow: #23412a; foot: Key implication: disclosure can become a planetary identity event."></a-entity>
 
-    <a-entity position="0 2.45 -7" floaty="speed: 1.0; amount: 0.08">
-      <a-sphere radius="0.75" color="#5cefff" material="transparent: true; opacity: 0.14; emissive: #5cefff; emissiveIntensity: 1.2; wireframe: true" spin-axis="y: 12"></a-sphere>
-      <a-torus radius="1.2" radius-tubular="0.03" rotation="90 0 0" color="#62f6ff" material="emissive: #62f6ff; emissiveIntensity: 1.1; transparent: true; opacity: 0.85" spin-axis="y: 26"></a-torus>
-      <a-torus radius="1.55" radius-tubular="0.026" rotation="40 0 25" color="#cd88ff" material="emissive: #cd88ff; emissiveIntensity: 1.05; transparent: true; opacity: 0.78" spin-axis="x: 18; y: 13"></a-torus>
-      <a-torus radius="1.92" radius-tubular="0.022" rotation="0 0 90" color="#ffd76d" material="emissive: #ffd76d; emissiveIntensity: 1.0; transparent: true; opacity: 0.74" spin-axis="z: 24"></a-torus>
-      <a-torus radius="2.35" radius-tubular="0.018" rotation="75 0 0" color="#7ff8ff" material="emissive: #7ff8ff; emissiveIntensity: 0.88; transparent: true; opacity: 0.65" spin-axis="y: 34"></a-torus>
-      <a-torus radius="2.75" radius-tubular="0.016" rotation="10 30 70" color="#e09bff" material="emissive: #e09bff; emissiveIntensity: 0.8; transparent: true; opacity: 0.60" spin-axis="x: 12; z: 22"></a-torus>
-      <a-torus radius="3.1" radius-tubular="0.014" rotation="0 0 90" color="#ffe08b" material="emissive: #ffe08b; emissiveIntensity: 0.8; transparent: true; opacity: 0.55" spin-axis="z: 18"></a-torus>
+  <a-entity position="12 2.7 0" rotation="0 -90 0" floaty="speed: 1.05; amount: 0.05; phase: 2.0"
+            panel-card="title: 4  SCIENCE / STEM STIMULUS; body: The report's most likely positive item for the full sample was increased investment in STEM. Public interest can expand into aerospace, propulsion, materials science, sensors, AI, astronomy, and consciousness research.\n\nThis is one of the most actionable outcomes of the current moment.; accent: #ffd76d; glow: #5b4218; foot: Key implication: curiosity may convert into education and research."></a-entity>
 
-      <a-entity position="0 1.95 0">
-        <a-plane width="4.6" height="0.7" color="#081321" material="transparent: true; opacity: 0.55; emissive: #14364b; emissiveIntensity: 0.40"></a-plane>
-        <a-text value="DISCLOSURE IMPLICATIONS XR HUD" align="center" color="#7ef7ff" width="7.6" position="0 0.03 0.03"></a-text>
-      </a-entity>
-    </a-entity>
+  <a-entity position="10.6 3.0 6.1" rotation="0 -120 0" floaty="speed: 0.9; amount: 0.05; phase: 2.6"
+            panel-card="title: 5  RISKS / NEGATIVE DYNAMICS; body: The same media wave that prepares the public can also destabilize the information field. The report warned about hoaxes, institutional distrust, polarization, social fracture, and disengagement.\n\nIn an AI era, those risks become even more acute.; accent: #ff96ad; glow: #5a2432; foot: Key implication: preparation and contamination rise together."></a-entity>
 
-    <a-entity position="-12.8 2.7 -12.4" rotation="0 34 0" floaty="speed: 0.85; amount: 0.06; phase: 0.0"
-              panel-card="title: 1  KNOWLEDGE CHANGES REACTION; body: The 2024 report found a sharp split. People who knew more about UAP/NHI saw disclosure as far more positive and transformational. People who knew less were dominated by fear, uncertainty, and paralysis.\n\nThis suggests that familiarity can soften shock.; accent: #7ef7ff; glow: #1b4b63; foot: Key implication: information exposure changes emotional valence."></a-entity>
+  <a-entity position="6.1 2.0 10.6" rotation="0 -150 0" floaty="speed: 0.8; amount: 0.04; phase: 0.5"
+            panel-card="title: 6  EVIDENCE TRAP; body: Mainstream attention without decisive public evidence can create a credibility trap. Believers intensify certainty. Skeptics intensify dismissal. Institutions look evasive whether they speak or remain silent.\n\nThis is one of the biggest interpretive risks in the next phase.; accent: #8cefff; glow: #16384a; foot: Watch for: testimony dominating where hard proof is absent."></a-entity>
 
-    <a-entity position="-6.4 3.25 -15.9" rotation="0 18 0" floaty="speed: 1.0; amount: 0.06; phase: 0.9"
-              panel-card="title: 2  MEDIA AS DISCLOSURE REHEARSAL; body: The Age of Disclosure brings insiders, secrecy claims, and national-security framing to broader audiences. Disclosure Day may push the topic further into mass culture.\n\nTogether they function like a cultural rehearsal before any formal disclosure.; accent: #d495ff; glow: #43245c; foot: Key implication: the public is being primed to think in disclosure terms."></a-entity>
+  <a-entity position="0 1.7 12" rotation="0 180 0" floaty="speed: 1.1; amount: 0.04; phase: 1.0"
+            panel-card="title: 7  AI HOAX ENVIRONMENT; body: The study already flagged widespread video hoaxes as a likely negative. That warning now feels prescient. Synthetic imagery, fake leaks, and rumor amplification can flourish around documentary and blockbuster attention.\n\nVerification norms become essential.; accent: #d39aff; glow: #3a214b; foot: Watch for: provenance, metadata, and source-chain verification."></a-entity>
 
-    <a-entity position="0 3.45 -17.1" rotation="0 0 0" floaty="speed: 0.95; amount: 0.06; phase: 1.8"
-              panel-card="title: 3  GLOBAL AWARENESS SHIFT; body: One of the strongest positive themes in the study was a shift toward We Are Not Alone consciousness. That frame can redirect attention toward ecological stewardship, civilizational humility, and humanity's place in a wider cosmos.\n\nThis is the deep narrative layer underneath the media wave.; accent: #9bf7b5; glow: #23412a; foot: Key implication: disclosure can become a planetary identity event."></a-entity>
+  <a-entity position="-6.1 2.0 10.6" rotation="0 150 0" floaty="speed: 1.0; amount: 0.04; phase: 1.6"
+            panel-card="title: 8  BEST-CASE PATHWAY; body: In the best case, stigma drops, dialogue improves, evidence literacy rises, and people become more psychologically prepared. The topic shifts from fear theater into thoughtful inquiry, science, humility, and shared curiosity.\n\nThat is the constructive transformation pathway.; accent: #9cf7b5; glow: #23432c; foot: Watch for: thoughtful mainstream conversations rather than sensationalism."></a-entity>
 
-    <a-entity position="6.4 3.25 -15.9" rotation="0 -18 0" floaty="speed: 1.05; amount: 0.06; phase: 2.6"
-              panel-card="title: 4  SCIENCE / STEM STIMULUS; body: The report's most likely positive item for the full sample was increased investment in STEM. Public interest can expand into aerospace, propulsion, materials science, sensors, AI, astronomy, and consciousness research.\n\nThis is one of the most actionable outcomes of the current moment.; accent: #ffd76d; glow: #5b4218; foot: Key implication: curiosity may convert into education and research."></a-entity>
+  <a-entity position="-10.6 2.2 6.1" rotation="0 120 0" floaty="speed: 0.9; amount: 0.04; phase: 2.1"
+            panel-card="title: 9  WORST-CASE PATHWAY; body: In the worst case, conspiracy escalation, apocalyptic framing, scams, fake evidence, and culture-war interpretations consume the subject. Interest peaks around spectacle, then crashes into confusion or cynicism.\n\nThat would validate the study's darker social warnings.; accent: #ff9bb0; glow: #572534; foot: Watch for: fear narratives and opportunistic exploitation."></a-entity>
 
-    <a-entity position="12.8 2.7 -12.4" rotation="0 -34 0" floaty="speed: 0.9; amount: 0.06; phase: 3.4"
-              panel-card="title: 5  RISKS / NEGATIVE DYNAMICS; body: The same media wave that prepares the public can also destabilize the information field. The report warned about hoaxes, institutional distrust, polarization, social fracture, and disengagement.\n\nIn an AI era, those risks become even more acute.; accent: #ff96ad; glow: #5a2432; foot: Key implication: preparation and contamination rise together."></a-entity>
+  <a-entity position="-12 1.0 0" rotation="0 90 0" floaty="speed: 1.0; amount: 0.035; phase: 2.5"
+            panel-card="title: 10  WHAT TO WATCH NOW; body: Key signals:\n• trailer talk turning into preparation talk\n• renewed official interviews\n• spikes in AI-generated fake footage\n• hopeful vs fear-based framing\n• a widening gap between cultural disclosure and formal disclosure; accent: #7ee7ff; glow: #18384a; foot: This next phase is a threshold in social preparation, not formal disclosure."></a-entity>
 
-    <a-entity position="-14.4 1.65 -7.2" rotation="0 54 0" floaty="speed: 0.8; amount: 0.05; phase: 0.5"
-              panel-card="title: 6  EVIDENCE TRAP; body: Mainstream attention without decisive public evidence can create a credibility trap. Believers intensify certainty. Skeptics intensify dismissal. Institutions look evasive whether they speak or remain silent.\n\nThis is one of the biggest interpretive risks in the next phase.; accent: #8cefff; glow: #16384a; foot: Watch for: testimony dominating where hard proof is absent."></a-entity>
+  <a-entity position="-10.6 1.35 -6.1" rotation="0 60 0" floaty="speed: 0.92; amount: 0.035; phase: 3.0"
+            panel-card="title: 11  PREPARATION AGENDA; body: Best response:\n• build evidence hygiene\n• normalize uncertainty\n• stay grounded psychologically\n• keep dialogue open\n• resist scams and manipulation\n• preserve a positive frame rooted in humility, science, ecology, and compassion; accent: #ffd76d; glow: #5b4218; foot: Healthy stance: disciplined openness, neither gullibility nor reflexive dismissal."></a-entity>
 
-    <a-entity position="-8.2 1.35 -8.9" rotation="0 32 0" floaty="speed: 1.1; amount: 0.05; phase: 1.4"
-              panel-card="title: 7  AI HOAX ENVIRONMENT; body: The study already flagged widespread video hoaxes as a likely negative. That warning now feels prescient. Synthetic imagery, fake leaks, and rumor amplification can flourish around documentary and blockbuster attention.\n\nVerification norms become essential.; accent: #d39aff; glow: #3a214b; foot: Watch for: provenance, metadata, and source-chain verification."></a-entity>
+  <a-entity position="-6.1 1.1 -10.6" rotation="0 30 0" floaty="speed: 1.06; amount: 0.035; phase: 3.4"
+            panel-card="title: 12  BOTTOM LINE; body: The current media wave does not equal formal disclosure. But it does make the 2024 study more relevant. The core test is whether a mass public can move from fear and uncertainty toward transformational possibility without losing evidentiary discipline.; accent: #9ef7ff; glow: #17384a; foot: Transformation potential rises with knowledge. So do the stakes of confusion."></a-entity>
 
-    <a-entity position="8.2 1.35 -8.9" rotation="0 -32 0" floaty="speed: 1.0; amount: 0.05; phase: 2.1"
-              panel-card="title: 8  BEST-CASE PATHWAY; body: In the best case, stigma drops, dialogue improves, evidence literacy rises, and people become more psychologically prepared. The topic shifts from fear theater into thoughtful inquiry, science, humility, and shared curiosity.\n\nThat is the constructive transformation pathway.; accent: #9cf7b5; glow: #23432c; foot: Watch for: thoughtful mainstream conversations rather than sensationalism."></a-entity>
+  <!-- Side beacons -->
+  <a-entity position="-15 1.0 0" pulse-scale="min:1; max:1.1; speed:1.0; phase:0.2">
+    <a-cylinder radius="0.09" height="2.7" color="#57f6ff" material="emissive: #57f6ff; emissiveIntensity: 1.08; transparent: true; opacity: 0.9"></a-cylinder>
+    <a-sphere radius="0.20" position="0 1.4 0" color="#57f6ff" material="emissive: #57f6ff; emissiveIntensity: 1.2"></a-sphere>
+  </a-entity>
 
-    <a-entity position="14.4 1.65 -7.2" rotation="0 -54 0" floaty="speed: 0.9; amount: 0.05; phase: 2.9"
-              panel-card="title: 9  WORST-CASE PATHWAY; body: In the worst case, conspiracy escalation, apocalyptic framing, scams, fake evidence, and culture-war interpretations consume the subject. Interest peaks around spectacle, then crashes into confusion or cynicism.\n\nThat would validate the study's darker social warnings.; accent: #ff9bb0; glow: #572534; foot: Watch for: fear narratives and opportunistic exploitation."></a-entity>
+  <a-entity position="15 1.0 0" pulse-scale="min:1; max:1.1; speed:1.0; phase:1.9">
+    <a-cylinder radius="0.09" height="2.7" color="#cc88ff" material="emissive: #cc88ff; emissiveIntensity: 1.08; transparent: true; opacity: 0.9"></a-cylinder>
+    <a-sphere radius="0.20" position="0 1.4 0" color="#cc88ff" material="emissive: #cc88ff; emissiveIntensity: 1.2"></a-sphere>
+  </a-entity>
 
-    <a-entity position="-11.0 0.85 -3.8" rotation="0 68 0" floaty="speed: 1.0; amount: 0.04; phase: 0.7"
-              panel-card="title: 10  WHAT TO WATCH NOW; body: Key signals:\n• trailer talk turning into preparation talk\n• renewed official interviews\n• spikes in AI-generated fake footage\n• hopeful vs fear-based framing\n• a widening gap between cultural disclosure and formal disclosure; accent: #7ee7ff; glow: #18384a; foot: This next month is a threshold in social preparation, not formal disclosure."></a-entity>
-
-    <a-entity position="0 0.85 -4.4" rotation="0 0 0" floaty="speed: 0.92; amount: 0.04; phase: 1.8"
-              panel-card="title: 11  PREPARATION AGENDA; body: Best response:\n• build evidence hygiene\n• normalize uncertainty\n• stay grounded psychologically\n• keep dialogue open\n• resist scams and manipulation\n• preserve a positive frame rooted in humility, science, ecology, and compassion; accent: #ffd76d; glow: #5b4218; foot: Healthy stance: disciplined openness, neither gullibility nor reflexive dismissal."></a-entity>
-
-    <a-entity position="11.0 0.85 -3.8" rotation="0 -68 0" floaty="speed: 1.06; amount: 0.04; phase: 2.8"
-              panel-card="title: 12  BOTTOM LINE; body: The current media wave does not equal formal disclosure. But it does make the 2024 study more relevant. The core test is whether a mass public can move from fear and uncertainty toward transformational possibility without losing evidentiary discipline.; accent: #9ef7ff; glow: #17384a; foot: Transformation potential rises with knowledge. So do the stakes of confusion."></a-entity>
-
-    <a-entity position="-14.8 1.1 -9.2" pulse-scale="min:1; max:1.1; speed:1.0; phase:0.2">
-      <a-cylinder radius="0.09" height="2.8" color="#57f6ff" material="emissive: #57f6ff; emissiveIntensity: 1.08; transparent: true; opacity: 0.9"></a-cylinder>
-      <a-sphere radius="0.20" position="0 1.45 0" color="#57f6ff" material="emissive: #57f6ff; emissiveIntensity: 1.2"></a-sphere>
-    </a-entity>
-
-    <a-entity position="14.8 1.1 -9.2" pulse-scale="min:1; max:1.1; speed:1.0; phase:1.9">
-      <a-cylinder radius="0.09" height="2.8" color="#cc88ff" material="emissive: #cc88ff; emissiveIntensity: 1.08; transparent: true; opacity: 0.9"></a-cylinder>
-      <a-sphere radius="0.20" position="0 1.45 0" color="#cc88ff" material="emissive: #cc88ff; emissiveIntensity: 1.2"></a-sphere>
-    </a-entity>
-
-    <a-entity position="0 1.0 -18.5" pulse-scale="min:1; max:1.08; speed:1.1; phase:2.8">
-      <a-cylinder radius="0.08" height="2.4" color="#ffd76d" material="emissive: #ffd76d; emissiveIntensity: 1.02; transparent: true; opacity: 0.88"></a-cylinder>
-      <a-sphere radius="0.18" position="0 1.25 0" color="#ffd76d" material="emissive: #ffd76d; emissiveIntensity: 1.2"></a-sphere>
-    </a-entity>
-  </a-scene>
+  <a-entity position="0 1.0 -15.5" pulse-scale="min:1; max:1.08; speed:1.1; phase:2.8">
+    <a-cylinder radius="0.08" height="2.4" color="#ffd76d" material="emissive: #ffd76d; emissiveIntensity: 1.02; transparent: true; opacity: 0.88"></a-cylinder>
+    <a-sphere radius="0.18" position="0 1.25 0" color="#ffd76d" material="emissive: #ffd76d; emissiveIntensity: 1.2"></a-sphere>
+  </a-entity>
+</a-scene>
 </body>
 </html>
