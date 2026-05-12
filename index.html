@@ -2,261 +2,317 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Burkhard Heim XR Archive Expanded</title>
+  <title>UAP Disclosure XR HUD 360</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
-  <script>
-    AFRAME.registerComponent('billboard-y', {
-      tick: function () {
-        const cam = this.el.sceneEl.camera;
-        if (!cam) return;
-        const p = new THREE.Vector3();
-        const c = new THREE.Vector3();
-        this.el.object3D.getWorldPosition(p);
-        cam.getWorldPosition(c);
-        this.el.object3D.lookAt(c.x, p.y, c.z);
-      }
-    });
-
-    AFRAME.registerComponent('floaty', {
-      schema: {amp: {default: 0.18}, speed: {default: 0.0012}, phase: {default: 0}},
-      init: function () { this.baseY = this.el.object3D.position.y; },
-      tick: function (t) {
-        this.el.object3D.position.y = this.baseY + Math.sin(this.data.phase + t * this.data.speed) * this.data.amp;
-      }
-    });
-
-    AFRAME.registerComponent('spin-y', {
-      schema: {speed: {default: 9}},
-      tick: function (_, dt) { this.el.object3D.rotation.y += (this.data.speed * dt / 1000) * Math.PI / 180; }
-    });
-
-    AFRAME.registerComponent('pulse-scale', {
-      schema: {amp: {default: 0.05}, speed: {default: 0.002}, phase: {default: 0}},
-      init: function () { this.base = this.el.object3D.scale.clone(); },
-      tick: function (t) {
-        const s = 1 + Math.sin(this.data.phase + t * this.data.speed) * this.data.amp;
-        this.el.object3D.scale.set(this.base.x * s, this.base.y * s, this.base.z * s);
-      }
-    });
-
-    AFRAME.registerComponent('toggle-expand', {
-      init: function () {
-        this.expanded = false;
-        this.small = {x: 1, y: 1, z: 1};
-        this.large = {x: 1.18, y: 1.18, z: 1.18};
-        this.el.addEventListener('click', () => {
-          this.expanded = !this.expanded;
-          const s = this.expanded ? this.large : this.small;
-          this.el.setAttribute('animation__scale', {
-            property: 'scale',
-            to: `${s.x} ${s.y} ${s.z}`,
-            dur: 320,
-            easing: 'easeOutQuad'
-          });
-        });
-      }
-    });
-
-    AFRAME.registerComponent('starfield', {
-      init: function () {
-        const group = new THREE.Group();
-        const geom = new THREE.SphereGeometry(0.03, 8, 8);
-        for (let i = 0; i < 1200; i++) {
-          const mat = new THREE.MeshBasicMaterial({
-            color: new THREE.Color().setHSL(Math.random(), 0.7, 0.74)
-          });
-          const star = new THREE.Mesh(geom, mat);
-          const r = 42 + Math.random() * 78;
-          const theta = Math.random() * Math.PI * 2;
-          const phi = Math.acos(2 * Math.random() - 1);
-          star.position.set(
-            r * Math.sin(phi) * Math.cos(theta),
-            r * Math.cos(phi),
-            r * Math.sin(phi) * Math.sin(theta)
-          );
-          group.add(star);
-        }
-        this.el.setObject3D('mesh', group);
-      }
-    });
-  </script>
   <style>
-    html, body { margin:0; background:#02030a; }
-    .note {
-      position: fixed; top: 10px; left: 10px; right: 10px; z-index: 20;
-      color: white; background: rgba(0,0,0,.58); padding: 10px 14px;
-      font: 14px/1.42 Arial, sans-serif; border-radius: 12px;
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #020611;
+      font-family: Arial, Helvetica, sans-serif;
     }
   </style>
 </head>
 <body>
-<div class="note">
-  VR navigation enabled: use the headset gaze, laser pointers, and thumbsticks / gamepad to move around the archive. Click panels to enlarge them. /
-  VR-Navigation aktiviert: Nutze Blicksteuerung, Laserpointer und Thumbsticks / Gamepad, um dich durch das Archiv zu bewegen. Klicke auf die Tafeln, um sie zu vergrößern.
-</div>
+<script>
+  // Gentle floating for panels / core
+  AFRAME.registerComponent('floaty', {
+    schema: {speed: {default: 1}, amount: {default: 0.07}, phase: {default: 0}},
+    tick: function (time) {
+      const p = this.el.object3D.position;
+      if (this.baseY === undefined) this.baseY = p.y;
+      p.y = this.baseY + Math.sin(time * 0.001 * this.data.speed + this.data.phase) * this.data.amount;
+    }
+  });
 
-<a-scene renderer="colorManagement:true; physicallyCorrectLights:true" background="color: #050816" vr-mode-ui="enabled: true">
-  <a-assets>
-    <img id="img1" src="HEIM.jpg">
-    <img id="img2" src="51FTtNIp40L._UF894,1000_QL80_.jpg">
-    <img id="img3" src="heim.jpeg">
-    <img id="img4" src="HeimTafel2 (1).jpg">
-    <img id="panel1" src="panel_01.png">
-    <img id="panel2" src="panel_02.png">
-    <img id="panel3" src="panel_03.png">
-    <img id="panel4" src="panel_04.png">
-    <img id="panel5" src="panel_05.png">
-    <img id="panel6" src="panel_06.png">
-    <img id="panel7" src="panel_07.png">
-    <img id="panel8" src="panel_08.png">
-    <img id="panel9" src="panel_09.png">
-    <img id="panel10" src="panel_10.png">
-    <img id="panel11" src="panel_11.png">
-    <img id="panel12" src="panel_12.png">
-    <img id="grad" src="data:image/svg+xml;utf8,
-      <svg xmlns='http://www.w3.org/2000/svg' width='1024' height='512'>
-        <defs>
-          <linearGradient id='g' x1='0' y1='0' x2='0' y2='1'>
-            <stop offset='0%' stop-color='%23040a2a'/>
-            <stop offset='26%' stop-color='%23111a60'/>
-            <stop offset='60%' stop-color='%23592086'/>
-            <stop offset='100%' stop-color='%23010612'/>
-          </linearGradient>
-        </defs>
-        <rect width='1024' height='512' fill='url(%23g)'/>
-      </svg>">
-  </a-assets>
+  AFRAME.registerComponent('spin-axis', {
+    schema: {x:{default:0}, y:{default:15}, z:{default:0}},
+    tick: function (time, dt) {
+      const r = this.el.object3D.rotation;
+      r.x += THREE.MathUtils.degToRad(this.data.x * dt / 1000);
+      r.y += THREE.MathUtils.degToRad(this.data.y * dt / 1000);
+      r.z += THREE.MathUtils.degToRad(this.data.z * dt / 1000);
+    }
+  });
 
-  <a-sky src="#grad" rotation="0 -90 0"></a-sky>
-  <a-entity starfield></a-entity>
+  // Quest-friendly thumbstick locomotion.
+  AFRAME.registerComponent('thumbstick-locomotion', {
+    schema: {
+      speed: {default: 0.06},
+      turnSpeed: {default: 2.2}
+    },
+    init: function () {
+      this.moveX = 0;
+      this.moveY = 0;
+      this.turnX = 0;
+      this.leftController = document.getElementById('leftHand');
+      this.rightController = document.getElementById('rightHand');
 
-  <a-entity id="rig" position="0 1.6 14" movement-controls="speed: 0.22; controls: gamepad, keyboard, touch">
-    <a-camera look-controls="pointerLockEnabled: true"></a-camera>
-    <a-entity laser-controls="hand: left" raycaster="objects: .clickable"></a-entity>
-    <a-entity laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
+      if (this.leftController) {
+        this.leftController.addEventListener('thumbstickmoved', (e) => {
+          this.moveX = e.detail.x || 0;
+          this.moveY = e.detail.y || 0;
+        });
+      }
+
+      if (this.rightController) {
+        this.rightController.addEventListener('thumbstickmoved', (e) => {
+          this.turnX = e.detail.x || 0;
+        });
+      }
+    },
+    tick: function (time, dt) {
+      const rig = this.el.object3D;
+      const secs = dt / 1000;
+
+      // Smooth snap-free turning using right thumbstick.
+      if (Math.abs(this.turnX) > 0.1) {
+        rig.rotation.y -= this.turnX * this.data.turnSpeed * secs;
+      }
+
+      // Move relative to camera facing direction using left thumbstick.
+      if (Math.abs(this.moveX) > 0.08 || Math.abs(this.moveY) > 0.08) {
+        const cam = document.getElementById('camera');
+        if (!cam) return;
+
+        const camObj = cam.object3D;
+        const forward = new THREE.Vector3();
+        camObj.getWorldDirection(forward);
+        forward.y = 0;
+        forward.normalize();
+
+        const right = new THREE.Vector3();
+        right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+        const move = new THREE.Vector3();
+        move.addScaledVector(forward, -this.moveY * this.data.speed);
+        move.addScaledVector(right, this.moveX * this.data.speed);
+
+        rig.position.x += move.x;
+        rig.position.z += move.z;
+      }
+    }
+  });
+
+  // Clean readable panel with no diagonal line.
+  AFRAME.registerComponent('panel-card', {
+    schema: {
+      title: {type: 'string'},
+      body: {type: 'string'},
+      accent: {default: '#7ef7ff'},
+      glow:   {default: '#16384e'},
+      foot:   {type: 'string', default: ''}
+    },
+    init: function () {
+      const d = this.data;
+      const el = this.el;
+      const w = 4.15;
+      const h = 2.85;
+      const hw = w / 2;
+      const hh = h / 2;
+
+      const back = document.createElement('a-plane');
+      back.setAttribute('width', w);
+      back.setAttribute('height', h);
+      back.setAttribute('color', '#081423');
+      back.setAttribute('material', 'transparent: true; opacity: 0.86; emissive: ' + d.glow + '; emissiveIntensity: 0.34; side: double');
+      el.appendChild(back);
+
+      // Border only.
+      const edges = [
+        [[-hw, hh, 0.025], [hw, hh, 0.025]],
+        [[-hw, -hh, 0.025], [hw, -hh, 0.025]],
+        [[-hw, -hh, 0.025], [-hw, hh, 0.025]],
+        [[hw, -hh, 0.025], [hw, hh, 0.025]]
+      ];
+      edges.forEach(([s, e]) => {
+        const line = document.createElement('a-entity');
+        line.setAttribute('line', `start: ${s[0]} ${s[1]} ${s[2]}; end: ${e[0]} ${e[1]} ${e[2]}; color: ${d.accent}; opacity: 0.86`);
+        el.appendChild(line);
+      });
+
+      const headBar = document.createElement('a-plane');
+      headBar.setAttribute('width', 3.84);
+      headBar.setAttribute('height', 0.34);
+      headBar.setAttribute('color', '#0b1c31');
+      headBar.setAttribute('material', 'transparent: true; opacity: 0.88; emissive: ' + d.glow + '; emissiveIntensity: 0.22; side: double');
+      headBar.setAttribute('position', '0 1.10 0.035');
+      el.appendChild(headBar);
+
+      const title = document.createElement('a-text');
+      title.setAttribute('value', d.title);
+      title.setAttribute('color', d.accent);
+      title.setAttribute('width', 5.7);
+      title.setAttribute('align', 'left');
+      title.setAttribute('anchor', 'left');
+      title.setAttribute('baseline', 'top');
+      title.setAttribute('position', '-1.78 1.24 0.05');
+      el.appendChild(title);
+
+      const body = document.createElement('a-text');
+      body.setAttribute('value', d.body);
+      body.setAttribute('color', '#eefbff');
+      body.setAttribute('width', 4.35);
+      body.setAttribute('align', 'left');
+      body.setAttribute('anchor', 'left');
+      body.setAttribute('baseline', 'top');
+      body.setAttribute('position', '-1.76 0.84 0.05');
+      el.appendChild(body);
+
+      if (d.foot) {
+        const foot = document.createElement('a-text');
+        foot.setAttribute('value', d.foot);
+        foot.setAttribute('color', '#ffd76d');
+        foot.setAttribute('width', 4.2);
+        foot.setAttribute('align', 'left');
+        foot.setAttribute('anchor', 'left');
+        foot.setAttribute('baseline', 'bottom');
+        foot.setAttribute('position', '-1.76 -1.12 0.05');
+        el.appendChild(foot);
+      }
+    }
+  });
+</script>
+
+<a-scene
+  background="color: #020816"
+  renderer="antialias: true; colorManagement: true"
+  xr-mode-ui="enabled: true"
+  device-orientation-permission-ui="enabled: true"
+  fog="type: exponential; color: #06101d; density: 0.017">
+
+  <!-- Lights -->
+  <a-entity light="type: ambient; intensity: 0.96; color: #a7e8ff"></a-entity>
+  <a-entity light="type: point; intensity: 1.05; color: #66f2ff; distance: 40" position="0 5 0"></a-entity>
+  <a-entity light="type: point; intensity: 0.82; color: #cf8cff; distance: 36" position="-8 4 -8"></a-entity>
+  <a-entity light="type: point; intensity: 0.82; color: #ffd76d; distance: 36" position="8 4 8"></a-entity>
+
+  <!-- Camera rig: desktop navigation + Quest thumbstick locomotion -->
+  <a-entity id="rig" position="0 1.65 0" thumbstick-locomotion="speed: 0.12; turnSpeed: 2.7">
+    <a-camera id="camera" wasd-controls="acceleration: 25" look-controls="pointerLockEnabled: false">
+      <a-cursor color="#7ef7ff" fuse="false"></a-cursor>
+    </a-camera>
+    <a-entity id="leftHand" laser-controls="hand: left"></a-entity>
+    <a-entity id="rightHand" laser-controls="hand: right"></a-entity>
   </a-entity>
 
-  <a-entity light="type: ambient; intensity: 0.98; color: #89a8ff"></a-entity>
-  <a-entity light="type: point; intensity: 1.8; color: #8fffff; distance: 46" position="0 4 0"></a-entity>
-  <a-entity light="type: point; intensity: 1.55; color: #ff7ef8; distance: 46" position="0 2 0"></a-entity>
-  <a-entity light="type: point; intensity: 1.25; color: #ffd27a; distance: 38" position="0 7 -6"></a-entity>
-  <a-entity light="type: point; intensity: 2.9; color: #ffd84d; distance: 25" position="0 3 -2"></a-entity>
+  <a-sky color="#030919"></a-sky>
 
-  <a-circle radius="29.5" rotation="-90 0 0" position="0 0 -2"
-            material="shader: flat; color: #081321; opacity: 0.96"></a-circle>
-
-  <a-entity position="0 3 -2">
-    <a-dodecahedron radius="1.22" material="wireframe:true; emissive:#36d8ff; emissiveIntensity:1.85; color:#36d8ff" spin-y="speed:10" rotation="18 12 0"></a-dodecahedron>
-    <a-dodecahedron radius="1.27" material="wireframe:true; emissive:#36d8ff; emissiveIntensity:1.85; color:#36d8ff" spin-y="speed:10" rotation="18 12 0"></a-dodecahedron>
-    <a-dodecahedron radius="2.00" material="wireframe:true; emissive:#52ff99; emissiveIntensity:1.75; color:#52ff99" spin-y="speed:-7" rotation="31 18 12"></a-dodecahedron>
-    <a-dodecahedron radius="2.07" material="wireframe:true; emissive:#52ff99; emissiveIntensity:1.75; color:#52ff99" spin-y="speed:-7" rotation="31 18 12"></a-dodecahedron>
-    <a-dodecahedron radius="2.84" material="wireframe:true; emissive:#b57cff; emissiveIntensity:1.75; color:#b57cff" spin-y="speed:4.5" rotation="12 33 24"></a-dodecahedron>
-    <a-dodecahedron radius="2.92" material="wireframe:true; emissive:#b57cff; emissiveIntensity:1.75; color:#b57cff" spin-y="speed:4.5" rotation="12 33 24"></a-dodecahedron>
-
-    <a-sphere radius="0.58" color="#ffd94a" material="emissive:#ffd94a; emissiveIntensity:2.15; transparent:true; opacity:0.99" pulse-scale="amp:0.18; speed:0.003"></a-sphere>
-    <a-sphere radius="0.95" color="#ffec85" material="emissive:#ffec85; emissiveIntensity:1.7; transparent:true; opacity:0.16" pulse-scale="amp:0.14; speed:0.002; phase:1.1"></a-sphere>
-    <a-torus radius="0.92" radius-tubular="0.03" rotation="85 0 0" color="#ffd24a" material="emissive:#ffd24a; emissiveIntensity:1.25; transparent:true; opacity:0.32" spin-y="speed:22"></a-torus>
-    <a-torus radius="0.68" radius-tubular="0.022" rotation="18 0 72" color="#fff0a0" material="emissive:#fff0a0; emissiveIntensity:1.15; transparent:true; opacity:0.24" spin-y="speed:-16"></a-torus>
-    <a-torus-knot radius="0.46" radius-tubular="0.03" p="2" q="3" color="#ffb300" material="emissive:#ffb300; emissiveIntensity:1.30; transparent:true; opacity:0.56" spin-y="speed:26"></a-torus-knot>
-
-    <a-cone height="1.15" radius-bottom="0.09" radius-top="0.0" color="#ffe166" material="emissive:#ffe166; emissiveIntensity:1.2; transparent:true; opacity:0.85" position="1.05 0 0" rotation="0 0 -90"></a-cone>
-    <a-cone height="1.15" radius-bottom="0.09" radius-top="0.0" color="#ffe166" material="emissive:#ffe166; emissiveIntensity:1.2; transparent:true; opacity:0.85" position="-1.05 0 0" rotation="0 0 90"></a-cone>
-    <a-cone height="1.15" radius-bottom="0.09" radius-top="0.0" color="#ffe166" material="emissive:#ffe166; emissiveIntensity:1.2; transparent:true; opacity:0.85" position="0 1.05 0" rotation="0 0 0"></a-cone>
-    <a-cone height="1.15" radius-bottom="0.09" radius-top="0.0" color="#ffe166" material="emissive:#ffe166; emissiveIntensity:1.2; transparent:true; opacity:0.85" position="0 -1.05 0" rotation="180 0 0"></a-cone>
-    <a-cone height="1.05" radius-bottom="0.08" radius-top="0.0" color="#ffd54d" material="emissive:#ffd54d; emissiveIntensity:1.15; transparent:true; opacity:0.82" position="0.74 0.74 0" rotation="0 0 -45"></a-cone>
-    <a-cone height="1.05" radius-bottom="0.08" radius-top="0.0" color="#ffd54d" material="emissive:#ffd54d; emissiveIntensity:1.15; transparent:true; opacity:0.82" position="-0.74 0.74 0" rotation="0 0 45"></a-cone>
-    <a-cone height="1.05" radius-bottom="0.08" radius-top="0.0" color="#ffd54d" material="emissive:#ffd54d; emissiveIntensity:1.15; transparent:true; opacity:0.82" position="0.74 -0.74 0" rotation="0 0 -135"></a-cone>
-    <a-cone height="1.05" radius-bottom="0.08" radius-top="0.0" color="#ffd54d" material="emissive:#ffd54d; emissiveIntensity:1.15; transparent:true; opacity:0.82" position="-0.74 -0.74 0" rotation="0 0 135"></a-cone>
-
-    <a-text value="R₄  •  δ  •  γ  •  β  •  α  •  x₅  •  π  •  μ" align="center" color="#f5f2ff" width="16" position="0 -3.78 0" billboard-y></a-text>
-    <a-text value="Burkhard Heim XR Archive / Burkhard-Heim-XR-Archiv" align="center" color="#9de8ff" width="22" position="0 3.65 0" billboard-y></a-text>
+  <!-- Stars -->
+  <a-entity id="stars">
+    <a-sphere radius="0.03" color="#ffffff" position="-12 8 -16"></a-sphere>
+    <a-sphere radius="0.02" color="#8beeff" position="-8 10 -6"></a-sphere>
+    <a-sphere radius="0.03" color="#d09cff" position="-2 9 12"></a-sphere>
+    <a-sphere radius="0.02" color="#ffd76d" position="5 10 -18"></a-sphere>
+    <a-sphere radius="0.03" color="#8beeff" position="10 8 10"></a-sphere>
+    <a-sphere radius="0.02" color="#ffffff" position="13 9 -4"></a-sphere>
+    <a-sphere radius="0.02" color="#8beeff" position="-13 6 8"></a-sphere>
+    <a-sphere radius="0.02" color="#d09cff" position="12 10 -15"></a-sphere>
+    <a-sphere radius="0.02" color="#ffffff" position="0 11 -22"></a-sphere>
+    <a-sphere radius="0.025" color="#ffd76d" position="-1 6 18"></a-sphere>
   </a-entity>
 
-  <a-text value="α" color="#ffd27a" width="8" position="-3 4 -1" floaty="amp:0.28; phase:0.3" billboard-y></a-text>
-  <a-text value="β" color="#83d0ff" width="8" position="4 3 -4" floaty="amp:0.26; phase:1.2" billboard-y></a-text>
-  <a-text value="γ" color="#ff8ced" width="8" position="2 5 -8" floaty="amp:0.22; phase:2.2" billboard-y></a-text>
-  <a-text value="δ" color="#afff9d" width="8" position="-5 3 -7" floaty="amp:0.3; phase:0.9" billboard-y></a-text>
-  <a-text value="π" color="#ffdff6" width="8" position="-7 4 -2" floaty="amp:0.21; phase:1.7" billboard-y></a-text>
-  <a-text value="μ" color="#c4c0ff" width="8" position="7 4 -2" floaty="amp:0.21; phase:2.6" billboard-y></a-text>
+  <!-- Lowered floor -->
+  <a-cylinder position="0 -1.45 0" radius="18" height="0.12" color="#07121f" material="metalness: 0.15; roughness: 0.45"></a-cylinder>
+  <a-ring position="0 -1.38 0" rotation="-90 0 0" radius-inner="2.1" radius-outer="2.5"
+          color="#73f7ff" material="transparent: true; opacity: 0.34; emissive: #73f7ff; emissiveIntensity: 0.85"></a-ring>
+  <a-ring position="0 -1.379 0" rotation="-90 0 0" radius-inner="5.5" radius-outer="5.85"
+          color="#cb8aff" material="transparent: true; opacity: 0.26; emissive: #cb8aff; emissiveIntensity: 0.75"></a-ring>
+  <a-ring position="0 -1.378 0" rotation="-90 0 0" radius-inner="9.4" radius-outer="9.75"
+          color="#ffd76d" material="transparent: true; opacity: 0.23; emissive: #ffd76d; emissiveIntensity: 0.70"></a-ring>
 
+  <!-- Central core -->
+  <a-entity position="0 2.45 0" floaty="speed: 1.0; amount: 0.08">
+    <a-sphere radius="0.75" color="#5cefff"
+              material="transparent: true; opacity: 0.14; emissive: #5cefff; emissiveIntensity: 1.2; wireframe: true"
+              spin-axis="y: 12"></a-sphere>
+    <a-torus radius="1.2" radius-tubular="0.03" rotation="90 0 0"
+             color="#62f6ff"
+             material="emissive: #62f6ff; emissiveIntensity: 1.1; transparent: true; opacity: 0.85"
+             spin-axis="y: 26"></a-torus>
+    <a-torus radius="1.55" radius-tubular="0.026" rotation="40 0 25"
+             color="#cd88ff"
+             material="emissive: #cd88ff; emissiveIntensity: 1.05; transparent: true; opacity: 0.78"
+             spin-axis="x: 18; y: 13"></a-torus>
+    <a-torus radius="1.92" radius-tubular="0.022" rotation="0 0 90"
+             color="#ffd76d"
+             material="emissive: #ffd76d; emissiveIntensity: 1.0; transparent: true; opacity: 0.74"
+             spin-axis="z: 24"></a-torus>
+    <a-torus radius="2.35" radius-tubular="0.018" rotation="75 0 0"
+             color="#7ff8ff"
+             material="emissive: #7ff8ff; emissiveIntensity: 0.88; transparent: true; opacity: 0.65"
+             spin-axis="y: 34"></a-torus>
+    <a-torus radius="2.75" radius-tubular="0.016" rotation="10 30 70"
+             color="#e09bff"
+             material="emissive: #e09bff; emissiveIntensity: 0.8; transparent: true; opacity: 0.60"
+             spin-axis="x: 12; z: 22"></a-torus>
+    <a-torus radius="3.1" radius-tubular="0.014" rotation="0 0 90"
+             color="#ffe08b"
+             material="emissive: #ffe08b; emissiveIntensity: 0.8; transparent: true; opacity: 0.55"
+             spin-axis="z: 18"></a-torus>
 
-  <a-entity position="9.69 2.15 -11.69" class="clickable" toggle-expand billboard-y>
-    <a-plane width="5.8" height="4.25" src="#img1" material="shader:flat"></a-plane>
-    <a-plane width="5.96" height="4.41" color="#84dfff" material="opacity:0.14; transparent:true; emissive:#84dfff; emissiveIntensity:0.85" position="0 0 -0.02"></a-plane>
-    <a-text value="Archivbild 1 / Archive Image 1" color="#eef8ff" width="5.2" align="center" position="0 -2.53 0.03"></a-text>
+    <a-entity position="0 1.95 0">
+      <a-plane width="4.7" height="0.72" color="#081321"
+               material="transparent: true; opacity: 0.55; emissive: #14364b; emissiveIntensity: 0.40"></a-plane>
+      <a-text value="DISCLOSURE IMPLICATIONS XR HUD"
+              align="center" color="#7ef7ff" width="7.8" position="0 0.03 0.03"></a-text>
+    </a-entity>
   </a-entity>
 
-  <a-entity position="9.69 2.15 7.69" class="clickable" toggle-expand billboard-y>
-    <a-plane width="5.8" height="4.25" src="#img2" material="shader:flat"></a-plane>
-    <a-plane width="5.96" height="4.41" color="#ffc3ef" material="opacity:0.14; transparent:true; emissive:#ffc3ef; emissiveIntensity:0.85" position="0 0 -0.02"></a-plane>
-    <a-text value="Archivbild 2 / Archive Image 2" color="#eef8ff" width="5.2" align="center" position="0 -2.53 0.03"></a-text>
+  <!-- 360-degree panel ring around the viewer -->
+  <a-entity position="0 2.6 -12" rotation="0 0 0" floaty="speed: 0.85; amount: 0.05; phase: 0.0"
+            panel-card="title: 1  KNOWLEDGE CHANGES REACTION; body: The 2024 report found a sharp split. People who knew more about UAP/NHI saw disclosure as far more positive and transformational. People who knew less were dominated by fear, uncertainty, and paralysis.\n\nThis suggests that familiarity can soften shock.; accent: #7ef7ff; glow: #1b4b63; foot: Key implication: information exposure changes emotional valence."></a-entity>
+
+  <a-entity position="6.1 3.0 -10.6" rotation="0 -30 0" floaty="speed: 1.0; amount: 0.05; phase: 0.8"
+            panel-card="title: 2  MEDIA AS DISCLOSURE REHEARSAL; body: The Age of Disclosure brings insiders, secrecy claims, and national-security framing to broader audiences. Disclosure Day may push the topic further into mass culture.\n\nTogether they function like a cultural rehearsal before any formal disclosure.; accent: #d495ff; glow: #43245c; foot: Key implication: the public is being primed to think in disclosure terms."></a-entity>
+
+  <a-entity position="10.6 3.1 -6.1" rotation="0 -60 0" floaty="speed: 0.95; amount: 0.05; phase: 1.4"
+            panel-card="title: 3  GLOBAL AWARENESS SHIFT; body: One of the strongest positive themes in the study was a shift toward We Are Not Alone consciousness. That frame can redirect attention toward ecological stewardship, civilizational humility, and humanity's place in a wider cosmos.\n\nThis is the deep narrative layer underneath the media wave.; accent: #9bf7b5; glow: #23412a; foot: Key implication: disclosure can become a planetary identity event."></a-entity>
+
+  <a-entity position="12 2.7 0" rotation="0 -90 0" floaty="speed: 1.05; amount: 0.05; phase: 2.0"
+            panel-card="title: 4  SCIENCE / STEM STIMULUS; body: The report's most likely positive item for the full sample was increased investment in STEM. Public interest can expand into aerospace, propulsion, materials science, sensors, AI, astronomy, and consciousness research.\n\nThis is one of the most actionable outcomes of the current moment.; accent: #ffd76d; glow: #5b4218; foot: Key implication: curiosity may convert into education and research."></a-entity>
+
+  <a-entity position="10.6 3.0 6.1" rotation="0 -120 0" floaty="speed: 0.9; amount: 0.05; phase: 2.6"
+            panel-card="title: 5  RISKS / NEGATIVE DYNAMICS; body: The same media wave that prepares the public can also destabilize the information field. The report warned about hoaxes, institutional distrust, polarization, social fracture, and disengagement.\n\nIn an AI era, those risks become even more acute.; accent: #ff96ad; glow: #5a2432; foot: Key implication: preparation and contamination rise together."></a-entity>
+
+  <a-entity position="6.1 2.0 10.6" rotation="0 -150 0" floaty="speed: 0.8; amount: 0.04; phase: 0.5"
+            panel-card="title: 6  EVIDENCE TRAP; body: Mainstream attention without decisive public evidence can create a credibility trap. Believers intensify certainty. Skeptics intensify dismissal. Institutions look evasive whether they speak or remain silent.\n\nThis is one of the biggest interpretive risks in the next phase.; accent: #8cefff; glow: #16384a; foot: Watch for: testimony dominating where hard proof is absent."></a-entity>
+
+  <a-entity position="0 1.7 12" rotation="0 180 0" floaty="speed: 1.1; amount: 0.04; phase: 1.0"
+            panel-card="title: 7  AI HOAX ENVIRONMENT; body: The study already flagged widespread video hoaxes as a likely negative. That warning now feels prescient. Synthetic imagery, fake leaks, and rumor amplification can flourish around documentary and blockbuster attention.\n\nVerification norms become essential.; accent: #d39aff; glow: #3a214b; foot: Watch for: provenance, metadata, and source-chain verification."></a-entity>
+
+  <a-entity position="-6.1 2.0 10.6" rotation="0 150 0" floaty="speed: 1.0; amount: 0.04; phase: 1.6"
+            panel-card="title: 8  BEST-CASE PATHWAY; body: In the best case, stigma drops, dialogue improves, evidence literacy rises, and people become more psychologically prepared. The topic shifts from fear theater into thoughtful inquiry, science, humility, and shared curiosity.\n\nThat is the constructive transformation pathway.; accent: #9cf7b5; glow: #23432c; foot: Watch for: thoughtful mainstream conversations rather than sensationalism."></a-entity>
+
+  <a-entity position="-10.6 2.2 6.1" rotation="0 120 0" floaty="speed: 0.9; amount: 0.04; phase: 2.1"
+            panel-card="title: 9  WORST-CASE PATHWAY; body: In the worst case, conspiracy escalation, apocalyptic framing, scams, fake evidence, and culture-war interpretations consume the subject. Interest peaks around spectacle, then crashes into confusion or cynicism.\n\nThat would validate the study's darker social warnings.; accent: #ff9bb0; glow: #572534; foot: Watch for: fear narratives and opportunistic exploitation."></a-entity>
+
+  <a-entity position="-12 1.0 0" rotation="0 90 0" floaty="speed: 1.0; amount: 0.035; phase: 2.5"
+            panel-card="title: 10  WHAT TO WATCH NOW; body: Key signals:\n• trailer talk turning into preparation talk\n• renewed official interviews\n• spikes in AI-generated fake footage\n• hopeful vs fear-based framing\n• a widening gap between cultural disclosure and formal disclosure; accent: #7ee7ff; glow: #18384a; foot: This next phase is a threshold in social preparation, not formal disclosure."></a-entity>
+
+  <a-entity position="-10.6 1.35 -6.1" rotation="0 60 0" floaty="speed: 0.92; amount: 0.035; phase: 3.0"
+            panel-card="title: 11  PREPARATION AGENDA; body: Best response:\n• build evidence hygiene\n• normalize uncertainty\n• stay grounded psychologically\n• keep dialogue open\n• resist scams and manipulation\n• preserve a positive frame rooted in humility, science, ecology, and compassion; accent: #ffd76d; glow: #5b4218; foot: Healthy stance: disciplined openness, neither gullibility nor reflexive dismissal."></a-entity>
+
+  <a-entity position="-6.1 1.1 -10.6" rotation="0 30 0" floaty="speed: 1.06; amount: 0.035; phase: 3.4"
+            panel-card="title: 12  BOTTOM LINE; body: The current media wave does not equal formal disclosure. But it does make the 2024 study more relevant. The core test is whether a mass public can move from fear and uncertainty toward transformational possibility without losing evidentiary discipline.; accent: #9ef7ff; glow: #17384a; foot: Transformation potential rises with knowledge. So do the stakes of confusion."></a-entity>
+
+  <!-- Side beacons -->
+  <a-entity position="-15 1.0 0" pulse-scale="min:1; max:1.1; speed:1.0; phase:0.2">
+    <a-cylinder radius="0.09" height="2.7" color="#57f6ff" material="emissive: #57f6ff; emissiveIntensity: 1.08; transparent: true; opacity: 0.9"></a-cylinder>
+    <a-sphere radius="0.20" position="0 1.4 0" color="#57f6ff" material="emissive: #57f6ff; emissiveIntensity: 1.2"></a-sphere>
   </a-entity>
 
-  <a-entity position="-9.69 2.15 7.69" class="clickable" toggle-expand billboard-y>
-    <a-plane width="5.8" height="4.25" src="#img3" material="shader:flat"></a-plane>
-    <a-plane width="5.96" height="4.41" color="#ffe88a" material="opacity:0.14; transparent:true; emissive:#ffe88a; emissiveIntensity:0.85" position="0 0 -0.02"></a-plane>
-    <a-text value="Archivbild 3 / Archive Image 3" color="#eef8ff" width="5.2" align="center" position="0 -2.53 0.03"></a-text>
+  <a-entity position="15 1.0 0" pulse-scale="min:1; max:1.1; speed:1.0; phase:1.9">
+    <a-cylinder radius="0.09" height="2.7" color="#cc88ff" material="emissive: #cc88ff; emissiveIntensity: 1.08; transparent: true; opacity: 0.9"></a-cylinder>
+    <a-sphere radius="0.20" position="0 1.4 0" color="#cc88ff" material="emissive: #cc88ff; emissiveIntensity: 1.2"></a-sphere>
   </a-entity>
 
-  <a-entity position="-9.69 2.15 -11.69" class="clickable" toggle-expand billboard-y>
-    <a-plane width="5.8" height="4.25" src="#img4" material="shader:flat"></a-plane>
-    <a-plane width="5.96" height="4.41" color="#b8ffc2" material="opacity:0.14; transparent:true; emissive:#b8ffc2; emissiveIntensity:0.85" position="0 0 -0.02"></a-plane>
-    <a-text value="Archivbild 4 / Archive Image 4" color="#eef8ff" width="5.2" align="center" position="0 -2.53 0.03"></a-text>
+  <a-entity position="0 1.0 -15.5" pulse-scale="min:1; max:1.08; speed:1.1; phase:2.8">
+    <a-cylinder radius="0.08" height="2.4" color="#ffd76d" material="emissive: #ffd76d; emissiveIntensity: 1.02; transparent: true; opacity: 0.88"></a-cylinder>
+    <a-sphere radius="0.18" position="0 1.25 0" color="#ffd76d" material="emissive: #ffd76d; emissiveIntensity: 1.2"></a-sphere>
   </a-entity>
-
-
-  <a-entity position="0.0 2.27 -21.0" class="clickable" toggle-expand billboard-y>
-    <a-plane width="7.25" height="4.55" src="#panel1" material="shader:flat; transparent:true"></a-plane>
-  </a-entity>
-
-  <a-entity position="9.5 2.57 -18.45" class="clickable" toggle-expand billboard-y>
-    <a-plane width="7.25" height="4.55" src="#panel2" material="shader:flat; transparent:true"></a-plane>
-  </a-entity>
-
-  <a-entity position="16.45 2.27 -11.5" class="clickable" toggle-expand billboard-y>
-    <a-plane width="7.25" height="4.55" src="#panel3" material="shader:flat; transparent:true"></a-plane>
-  </a-entity>
-
-  <a-entity position="19.0 2.57 -2.0" class="clickable" toggle-expand billboard-y>
-    <a-plane width="7.25" height="4.55" src="#panel4" material="shader:flat; transparent:true"></a-plane>
-  </a-entity>
-
-  <a-entity position="16.45 2.27 7.5" class="clickable" toggle-expand billboard-y>
-    <a-plane width="7.25" height="4.55" src="#panel5" material="shader:flat; transparent:true"></a-plane>
-  </a-entity>
-
-  <a-entity position="9.5 2.57 14.45" class="clickable" toggle-expand billboard-y>
-    <a-plane width="7.25" height="4.55" src="#panel6" material="shader:flat; transparent:true"></a-plane>
-  </a-entity>
-
-  <a-entity position="0.0 2.27 17.0" class="clickable" toggle-expand billboard-y>
-    <a-plane width="7.25" height="4.55" src="#panel7" material="shader:flat; transparent:true"></a-plane>
-  </a-entity>
-
-  <a-entity position="-9.5 2.57 14.45" class="clickable" toggle-expand billboard-y>
-    <a-plane width="7.25" height="4.55" src="#panel8" material="shader:flat; transparent:true"></a-plane>
-  </a-entity>
-
-  <a-entity position="-16.45 2.27 7.5" class="clickable" toggle-expand billboard-y>
-    <a-plane width="7.25" height="4.55" src="#panel9" material="shader:flat; transparent:true"></a-plane>
-  </a-entity>
-
-  <a-entity position="-19.0 2.57 -2.0" class="clickable" toggle-expand billboard-y>
-    <a-plane width="7.25" height="4.55" src="#panel10" material="shader:flat; transparent:true"></a-plane>
-  </a-entity>
-
-  <a-entity position="-16.45 2.27 -11.5" class="clickable" toggle-expand billboard-y>
-    <a-plane width="7.25" height="4.55" src="#panel11" material="shader:flat; transparent:true"></a-plane>
-  </a-entity>
-
-  <a-entity position="-9.5 2.57 -18.45" class="clickable" toggle-expand billboard-y>
-    <a-plane width="7.25" height="4.55" src="#panel12" material="shader:flat; transparent:true"></a-plane>
-  </a-entity>
-
-  <a-text value="Umkreise das Zentrum: 4 Archivbilder und 12 große Tafeln sind über 360° verteilt.&#10;Circle the center: 4 archive images and 12 large panels are distributed across the full 360° field."
-          position="0 0.08 -2" rotation="-90 0 0" align="center" width="28" color="#8ecbff"></a-text>
 </a-scene>
 </body>
 </html>
